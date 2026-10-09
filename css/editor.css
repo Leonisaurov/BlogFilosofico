@@ -850,6 +850,28 @@
   color: var(--accent-deep);
 }
 
+.proposal__status[data-state="loading"] {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent-deep);
+  animation: proposal-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes proposal-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .proposal__status[data-state="loading"] {
+    animation: none;
+  }
+}
+
 .proposal__step-text {
   margin-top: 8px;
   font-size: 0.83rem;

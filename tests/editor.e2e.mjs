@@ -352,6 +352,14 @@ out.steps.proposal = await evaluate(`(async () => {
   const COVER = ${JSON.stringify(COVER)};
   const result = {};
 
+  // --- 0) Editor vacío: la descarga directa avisa y no genera un archivo. ---
+  set('title', ''); set('description', ''); set('category', '');
+  set('types', ''); set('author', ''); set('coverImage', ''); set('content', '');
+  await sleep(150);
+  editor.querySelector('[data-editor-download]').click();
+  await sleep(120);
+  result.emptyDownloadNotice = /antes de descargar/i.test(notice());
+
   set('title', 'La ética según Spinoza');
   set('description', 'Descripción para la tarjeta.');
   set('category', 'Ética');

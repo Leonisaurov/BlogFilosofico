@@ -348,7 +348,7 @@ export function createEditor(root, { onClose } = {}) {
         <fieldset class="proposal__confirm">
           <legend class="proposal__confirm-legend">Confirmá antes de continuar</legend>
 
-          <p class="proposal__confirm-hint" data-proposal-confirm-hint>
+          <p class="proposal__confirm-hint" id="proposal-confirm-hint" data-proposal-confirm-hint>
             Primero descargá el archivo Markdown (y la imagen, si corresponde);
             recién entonces se habilitan las casillas.
           </p>
@@ -368,7 +368,7 @@ export function createEditor(root, { onClose } = {}) {
 
         <div class="share__actions proposal__actions">
           <button class="share__action share__action--primary" type="button"
-                  data-proposal-continue disabled>
+                  data-proposal-continue aria-describedby="proposal-confirm-hint" disabled>
             Continuar al correo
           </button>
           <button class="share__action" type="button" data-share-close>Cancelar</button>
@@ -439,6 +439,7 @@ export function createEditor(root, { onClose } = {}) {
     content: "",
     createdAt: "",
     localCoverUrl: "",
+    localCoverName: "",
     mode: "edit",
     previewTab: "card",
     sharedFingerprint: null,
@@ -876,12 +877,21 @@ export function createEditor(root, { onClose } = {}) {
 
   // --- Portada -----------------------------------------------------------
 
+  /** Libera la URL temporal de una portada local grande (evita fugas). */
+  function releaseLocalCoverUrl() {
+    if (state.localCoverUrl) {
+      URL.revokeObjectURL(state.localCoverUrl);
+      state.localCoverUrl = "";
+    }
+  }
+
   async function handleCoverFile(file) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setNotice("El archivo elegido no es una imagen.");
       return;
     }
+    releaseLocalCoverUrl();
     const kb = Math.round(file.size / 1024);
     if (file.size <= SITE.localImageMaxBytes) {
       const dataUrl = await readAsDataURL(file);
@@ -903,7 +913,7 @@ export function createEditor(root, { onClose } = {}) {
 
   function clearCover() {
     state.coverImage = "";
-    state.localCoverUrl = "";
+    releaseLocalCoverUrl();
     state.localCoverName = "";
     fieldEls.coverImage.value = "";
     coverHint.textContent = "Si no hay imagen, la tarjeta usa una portada predeterminada.";
@@ -923,6 +933,12 @@ export function createEditor(root, { onClose } = {}) {
 
   /** Descarga el `.md` actual. No depende del correo ni toca el editor. */
   function downloadPublicationMarkdown() {
+    if (isPublicationEmpty(publicationData())) {
+      setNotice(
+        "Escribí al menos un título o algo de contenido antes de descargar el artículo."
+      );
+      return null;
+    }
     const file = buildPublicationMarkdownFile(publicationForTransfer());
     try {
       downloadText(file.filename, file.content, "text/markdown;charset=utf-8");
@@ -966,8 +982,13 @@ export function createEditor(root, { onClose } = {}) {
     proposal.coverRequested = true;
     proposalCheckCover.disabled = false;
     updateProposalContinue();
+    setProposalStatus(proposalCoverStatus, "Descargando…", "loading");
+    // La descarga remota puede colgarse: se corta a los 15 s y se ofrece la
+    // alternativa manual en vez de dejar el paso en «Descargando…» para siempre.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const response = await fetch(info.reference);
+      const response = await fetch(info.reference, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const blob = await response.blob();
       if (!blob.size) throw new Error("archivo vacío");
@@ -981,6 +1002,8 @@ export function createEditor(root, { onClose } = {}) {
       proposalOpenCover.href = info.reference;
       setProposalStatus(proposalCoverStatus, "Requiere guardado manual", "manual");
       shareFeedback.textContent = `El navegador no pudo descargar la imagen automáticamente. Usá «Abrir imagen original para guardarla», guardala como ${info.filename} y adjuntala al correo junto con el .md.`;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -1130,7 +1153,8 @@ export function createEditor(root, { onClose } = {}) {
     state.coverLocalName = "";
     state.content = "";
     state.createdAt = "";
-    state.localCoverUrl = "";
+    releaseLocalCoverUrl();
+    state.localCoverName = "";
     state.sharedFingerprint = null;
     lastSavedFingerprint = null;
     writeForm();
@@ -1228,7 +1252,7 @@ export function createEditor(root, { onClose } = {}) {
     state.coverLocalName = "";
     state.content = "";
     state.createdAt = "";
-    state.localCoverUrl = "";
+    releaseLocalCoverUrl();
     state.localCoverName = "";
     state.sharedFingerprint = null;
     lastSavedFingerprint = null;
@@ -1251,7 +1275,7 @@ export function createEditor(root, { onClose } = {}) {
   // La URL de portada se gestiona aparte: escribir una URL descarta la local.
   fieldEls.coverImage.addEventListener("input", () => {
     state.coverImage = fieldEls.coverImage.value;
-    state.localCoverUrl = "";
+    releaseLocalCoverUrl();
     state.localCoverName = "";
     coverHint.textContent = state.coverImage
       ? "Se usará esta URL como portada. Para un archivo local del proyecto, la ruta correcta es ./assets/<archivo>."
