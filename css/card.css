@@ -1,0 +1,273 @@
+/* ==========================================================================
+   card.css — Tarjeta del feed (cápsula de publicación)
+   La portada conserva los colores propios de cada artículo; el degradado
+   cálido y el texto marfil garantizan la legibilidad de la descripción.
+   ========================================================================== */
+
+.post__media {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--surface-sunken);
+}
+
+/* Respaldo local (SVG data-URI): siempre visible si la imagen falla. */
+.post__cover {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform: scale(1.05);
+  transition: transform 1.2s var(--ease);
+}
+
+/* Imagen editorial. Entra con un fundido suave; NO se le aplica filtro beige:
+   cada portada conserva su identidad cromática. */
+.post__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.9s var(--ease), transform 1.2s var(--ease);
+}
+
+.post__img.is-loaded {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .post:not([data-static="true"]):hover .post__img.is-loaded,
+  .post:not([data-static="true"]):hover .post__cover {
+    transform: scale(1.09);
+  }
+}
+
+/* Degradado de protección cálido: oscurece arriba (categoría) y abajo (texto). */
+.post__scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(46, 33, 22, 0.62) 0%,
+      rgba(46, 33, 22, 0.06) 28%,
+      rgba(46, 33, 22, 0.42) 60%,
+      rgba(46, 33, 22, 0.93) 100%
+    );
+  pointer-events: none;
+}
+
+.post__body {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: clamp(16px, 4.2vw, 26px);
+}
+
+.post__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.post__category {
+  display: inline-flex;
+  align-items: center;
+  max-width: 70%;
+  padding: 5px 11px;
+  border: 1px solid rgba(250, 246, 238, 0.3);
+  border-radius: var(--radius-pill);
+  background: rgba(46, 33, 22, 0.46);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--on-cover);
+  font-size: 0.66rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post__index {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--on-cover-dim);
+}
+
+.post__index i {
+  font-style: normal;
+  color: var(--accent-soft);
+  padding: 0 2px;
+}
+
+.post__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 48ch;
+}
+
+.post__title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 1.05rem + 3.4vw, 2.35rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--on-cover);
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(28, 19, 12, 0.7);
+}
+
+.post__excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow: hidden;
+  font-size: clamp(0.88rem, 0.84rem + 0.3vw, 1rem);
+  line-height: 1.55;
+  color: rgba(250, 246, 238, 0.9);
+}
+
+.post__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 0.74rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--accent-soft);
+}
+
+.post__cta svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.3s var(--ease);
+}
+
+@media (hover: hover) {
+  .post:not([data-static="true"]):hover .post__cta {
+    color: var(--on-cover);
+  }
+  .post:not([data-static="true"]):hover .post__cta svg {
+    transform: translateX(4px);
+  }
+}
+
+@media (hover: none) {
+  .post__excerpt {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+}
+
+/* ==========================================================================
+   Variante de cuadrícula (página de sección)
+   Mismo componente y mismo marcado que la tarjeta del feed; solo cambia la
+   disposición: imagen arriba y texto sobre superficie crema, en lugar de la
+   cápsula vertical con texto superpuesto. Conserva la portada y su respaldo.
+   ========================================================================== */
+.post--grid {
+  height: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 1;
+  transform: none;
+}
+
+.post--grid[data-active="false"],
+.post--grid[data-active="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.post--grid .post__media {
+  position: relative;
+  inset: auto;
+  aspect-ratio: 16 / 10;
+}
+
+.post--grid .post__scrim {
+  display: none;
+}
+
+.post--grid .post__body {
+  position: relative;
+  inset: auto;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 15px 17px 17px;
+}
+
+.post--grid .post__foot {
+  max-width: none;
+  gap: 7px;
+}
+
+/* La categoría pasa de pastilla sobre imagen a etiqueta sobre papel. */
+.post--grid .post__category {
+  align-self: flex-start;
+  max-width: 100%;
+  border-color: var(--line-strong);
+  background: transparent;
+  color: var(--accent-deep);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.post--grid .post__title {
+  color: var(--text);
+  font-size: 1.2rem;
+  line-height: 1.16;
+  text-shadow: none;
+}
+
+.post--grid .post__excerpt {
+  color: var(--text-2);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.post--grid .post__cta {
+  margin-top: 2px;
+  color: var(--accent-deep);
+}
+
+@media (hover: hover) {
+  .post--grid:not([data-static="true"]):hover {
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-4px);
+  }
+  .post--grid:not([data-static="true"]):hover .post__cta {
+    color: var(--accent);
+  }
+  .post--grid:not([data-static="true"]):hover .post__cta svg {
+    transform: translateX(4px);
+  }
+}
+
+/* ==========================================================================
+   Cuadrícula editorial de tarjetas
+   Reutilizada por la página de sección y por la vista de cuadrícula de la
+   página principal: mismas columnas, mismos huecos, mismas tarjetas.
+   ========================================================================== */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, clamp(230px, 30vw, 340px)), 1fr)
+  );
+  gap: clamp(14px, 2.2vw, 24px);
+}

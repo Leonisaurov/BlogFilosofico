@@ -1,0 +1,13 @@
+# Artefactos generados por el arnés de verificación (tests/run)
+tests/artifacts/
+
+# Dependencias (el proyecto no usa ninguna, pero por si acaso)
+node_modules/
+
+# Registros y temporales
+*.log
+*.tmp
+
+# Sistema
+.DS_Store
+Thumbs.db

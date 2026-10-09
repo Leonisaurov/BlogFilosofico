@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Círculos concéntricos y ejes">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="120" cy="80" r="52"/>
+    <circle cx="120" cy="80" r="34"/>
+    <circle cx="120" cy="80" r="16"/>
+    <path d="M120 22v116M56 80h128"/>
+    <circle cx="120" cy="80" r="4" fill="#956b46" stroke="none"/>
+  </g>
+</svg>

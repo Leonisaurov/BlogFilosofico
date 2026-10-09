@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Engranaje y circuito">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="96" cy="78" r="40"/>
+    <circle cx="96" cy="78" r="15"/>
+    <path d="M136 78h-8M96 118v8M56 78h-8M96 38v-8M124.3 106.3l-5.7 5.7M67.7 106.3l5.7 5.7M67.7 49.7l5.7-5.7M124.3 49.7l-5.7-5.7"/>
+    <path d="M136 78h28v-32h40M164 78v34h40"/>
+    <circle cx="164" cy="78" r="5" fill="#956b46" stroke="none"/>
+    <circle cx="204" cy="46" r="5" fill="#956b46" stroke="none"/>
+    <circle cx="204" cy="112" r="5" fill="#956b46" stroke="none"/>
+  </g>
+</svg>

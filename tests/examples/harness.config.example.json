@@ -1,0 +1,22 @@
+{
+  "url": "http://127.0.0.1:5173",
+  "devServer": {
+    "command": "npm run dev",
+    "cwd": "..",
+    "env": {},
+    "timeoutMs": 60000
+  },
+  "browsers": ["chromium", "firefox"],
+  "viewports": {
+    "desktop": { "width": 1280, "height": 800, "deviceScaleFactor": 1, "mobile": false },
+    "mobile": { "width": 390, "height": 844, "deviceScaleFactor": 3, "mobile": true }
+  },
+  "specDir": "specs",
+  "specSuffix": ".spec.mjs",
+  "artifactsDir": "artifacts",
+  "screenshots": true,
+  "failOnConsoleError": true,
+  "failOnPageError": true,
+  "failOnBadResponse": false,
+  "timeoutMs": 20000
+}

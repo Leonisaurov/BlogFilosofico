@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" role="img" aria-label="Símbolo phi (dibujo lineal)">
+  <g fill="none" stroke="#956B46" stroke-width="7" stroke-linecap="round">
+    <circle cx="100" cy="106" r="68"/>
+    <line x1="100" y1="16" x2="100" y2="196"/>
+  </g>
+</svg>

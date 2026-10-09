@@ -1,0 +1,246 @@
+/* ==========================================================================
+   tokens.css — Identidad editorial cálida: papel marfil, tinta café.
+   Sistema de diseño centralizado: toda la interfaz toma sus colores,
+   tipografía, textura e ilustraciones de estas variables.
+   ========================================================================== */
+
+:root {
+  /* --- Color: papel ------------------------------------------------------ */
+  --bg: #f3ebdd;            /* fondo principal (beige claro) */
+  --bg-alt: #eae0cf;        /* fondo alternativo */
+  --surface: #faf6ee;       /* superficies y tarjetas (marfil) */
+  --surface-2: #f6efe2;     /* superficie secundaria */
+  --surface-sunken: #efe5d4;/* áreas hundidas: campos, código, escenarios */
+
+  /* --- Color: tinta café ------------------------------------------------- */
+  --accent: #956b46;        /* café principal de acento (visible sobre beige) */
+  --accent-soft: #b18a64;   /* café secundario */
+  --accent-deep: #70513a;   /* café oscuro: texto destacado e iconos */
+
+  /* --- Color: texto ------------------------------------------------------ */
+  --text: #46382d;          /* texto principal */
+  --text-2: #5d4c3d;        /* texto de lectura */
+  --text-dim: #6f6152;      /* texto secundario y metadatos */
+
+  /* --- Color: bordes y sombras ------------------------------------------ */
+  --line: #d6c3ab;          /* bordes y separadores (arena) */
+  --line-strong: #c2ab8f;
+  --shadow-card: 0 16px 38px -26px rgba(96, 74, 52, 0.42),
+    0 2px 6px rgba(96, 74, 52, 0.08);
+  --shadow-lift: 0 24px 52px -24px rgba(96, 74, 52, 0.5),
+    0 2px 8px rgba(96, 74, 52, 0.12);
+
+  /* --- Texto sobre portadas (las imágenes conservan sus colores) -------- */
+  --on-cover: #faf6ee;
+  --on-cover-dim: rgba(250, 246, 238, 0.84);
+  --cover-scrim: rgba(46, 33, 22, 0.62);
+  --scrim: rgba(58, 42, 28, 0.55);
+
+  /* --- Superposición modal y color de peligro --------------------------- */
+  --overlay: rgba(58, 42, 28, 0.42);
+  --danger: #9c3b25;
+  --danger-soft: rgba(156, 59, 37, 0.1);
+
+  /* Los controles nativos (scrollbars, checkbox) siguen el tema. */
+  color-scheme: light;
+
+  /* --- Textura de papel (grano cálido, sin recursos remotos) ------------ */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0.63 0 0 0 0 0.49 0 0 0 0 0.35 0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23p)'/%3E%3C/svg%3E");
+
+  /* --- Ilustraciones lineales (papel tapiz, tono café) ------------------ */
+  --art-phi: url("../assets/phi.svg");
+  --art-vitruvio: url("../assets/vitruvio-line.png");
+  --art-vitruvian: url("../assets/vitruvian.svg");
+  --art-socrates: url("../assets/socrates-line.png");
+  --art-column: url("../assets/column.svg");
+
+  /* --- Tipografía ------------------------------------------------------- */
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua",
+    Georgia, "Times New Roman", serif;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Roboto Mono", "DejaVu Sans Mono", monospace;
+
+  --tracking-wide: 0.16em;
+
+  /* --- Forma y profundidad --------------------------------------------- */
+  --radius-lg: 14px;
+  --radius-md: 9px;
+  --radius-pill: 999px;
+
+  /* --- Movimiento ------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur: 0.4s;
+
+  /* --- Métricas de layout (el JS ajusta --slide-h y --track-pad) -------- */
+  --header-h: 56px;
+  --dock-h: 60px;
+  --feed-pad-x: 18px;
+  --slide-ratio: 0.75;                 /* 3/4 de la altura disponible */
+  --slide-h: 66vh;                     /* respaldo; el JS lo calcula exacto */
+  --slide-gap: 18px;
+  --track-pad: calc((100vh - var(--header-h) - var(--dock-h) - var(--slide-h)) / 2);
+  --card-max: 100%;
+
+  --z-header: 20;
+  --z-reader: 60;
+  --z-menu: 80;
+}
+
+/* ==========================================================================
+   Tema oscuro — misma identidad beige/café con la luminosidad invertida.
+   Solo se redefinen los tokens semánticos: ningún componente cambia de
+   estructura ni necesita una hoja de estilos propia. Se activa con
+   `html[data-theme="dark"]` (lo aplica el script de arranque del <head> antes
+   del primer pintado, así no aparece el tema equivocado).
+   ========================================================================== */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* --- Papel: café muy oscuro ------------------------------------------ */
+  --bg: #211c18;
+  --bg-alt: #2b241e;
+  --surface: #342b23;
+  --surface-2: #3b3129;
+  --surface-sunken: #2a231d;
+
+  /* --- Tinta: acentos café aclarados para el fondo oscuro -------------- */
+  --accent: #c39a70;
+  --accent-soft: #a98059;
+  --accent-deep: #d8b48c;
+
+  /* --- Texto: beige cálido --------------------------------------------- */
+  --text: #f1e5d2;
+  --text-2: #c0ae98;
+  --text-dim: #b8a58e;
+
+  /* --- Bordes ----------------------------------------------------------- */
+  --line: #514234;
+  --line-strong: #6b5744;
+
+  /* --- Sombra y superposición ------------------------------------------ */
+  --shadow-card: 0 16px 38px -26px rgba(0, 0, 0, 0.7), 0 2px 6px rgba(0, 0, 0, 0.45);
+  --shadow-lift: 0 24px 52px -24px rgba(0, 0, 0, 0.78), 0 2px 8px rgba(0, 0, 0, 0.5);
+  --overlay: rgba(0, 0, 0, 0.62);
+  --danger: #edaa92;
+  --danger-soft: rgba(229, 155, 131, 0.14);
+}
+
+/* --- Reset -------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  background-image: var(--grain);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow: hidden; /* la página nunca scrollea: solo el área central */
+}
+
+h1, h2, h3, h4, p, figure, blockquote {
+  margin: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: #3a2a1c;
+}
+
+/* --- Utilidades --------------------------------------------------------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Ilustración lineal teñida con el café del sistema (mask + background). */
+.paper-art {
+  background-color: var(--accent);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* --- Sin JavaScript ----------------------------------------------------- */
+.noscript {
+  max-width: 60ch;
+  margin: 0 auto;
+  padding: 15vh 24px;
+  font-family: var(--font-serif);
+  color: var(--text);
+}
+.noscript h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.6em;
+}
+.noscript p {
+  color: var(--text-2);
+  line-height: 1.7;
+}
+
+/* --- Movimiento reducido ------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

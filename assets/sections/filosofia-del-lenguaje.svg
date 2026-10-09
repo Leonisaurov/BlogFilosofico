@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Bocadillos de diálogo">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 44H136a12 12 0 0 1 12 12V84a12 12 0 0 1-12 12H88l-14 12 3-12H52a12 12 0 0 1-12-12V56a12 12 0 0 1 12-12Z"/>
+    <path d="M110 92H182a12 12 0 0 1 12 12v22a12 12 0 0 1-12 12H162l-14 12 3-12H110a12 12 0 0 1-12-12v-22a12 12 0 0 1 12-12Z"/>
+    <path d="M78 64h34M78 76h22M138 112h30M138 122h18"/>
+  </g>
+</svg>

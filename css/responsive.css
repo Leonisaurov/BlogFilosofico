@@ -1,0 +1,65 @@
+/* ==========================================================================
+   responsive.css — Ajustes por tamaño de pantalla
+   Móvil primero; el JS recalcula --slide-h y --track-pad al cambiar el
+   tamaño, leyendo --slide-ratio (que aquí se afina por breakpoint).
+   ========================================================================== */
+
+/* --- Móviles pequeños --------------------------------------------------- */
+@media (max-width: 400px) {
+  :root {
+    --header-h: 50px;
+    --dock-h: 48px;
+    --feed-pad-x: 13px;
+    --slide-ratio: 0.72;
+    --slide-gap: 14px;
+    --radius-lg: 12px;
+  }
+  .post__body {
+    padding: 14px;
+  }
+}
+
+/* --- Móviles bajos (paisaje) ------------------------------------------- */
+@media (orientation: landscape) and (max-height: 560px) {
+  :root {
+    --header-h: 46px;
+    --dock-h: 30px;
+    --slide-ratio: 0.84;
+    --slide-gap: 14px;
+  }
+  .post__excerpt {
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+  .brand__mark {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+/* --- Tabletas y escritorio --------------------------------------------- */
+@media (min-width: 720px) {
+  :root {
+    --header-h: 64px;
+    --dock-h: 72px;
+    --feed-pad-x: 32px;
+    --slide-gap: 24px;
+    --card-max: 560px;
+    --radius-lg: 16px;
+  }
+}
+
+@media (min-width: 1100px) {
+  :root {
+    --header-h: 68px;
+    --feed-pad-x: 48px;
+    --card-max: 640px;
+  }
+}
+
+/* --- Textos muy grandes: prioriza la legibilidad ------------------------ */
+@media (max-width: 400px) and (min-resolution: 2dppx) {
+  .post__excerpt {
+    font-size: 0.86rem;
+  }
+}

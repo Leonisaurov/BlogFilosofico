@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Pluma sobre una página escrita">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="64" y="28" width="108" height="104" rx="4"/>
+    <path d="M80 52h60M80 68h76M80 84h48M80 100h64"/>
+    <path d="M182 28l-30 66 12 5 30-66Z"/>
+    <path d="M152 94l12 5"/>
+  </g>
+</svg>

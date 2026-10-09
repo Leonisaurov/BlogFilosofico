@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Cabeza con engranaje">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="112" cy="82" r="46"/>
+    <circle cx="112" cy="82" r="18"/>
+    <circle cx="112" cy="82" r="6" fill="#956b46" stroke="none"/>
+    <path d="M130 82h8M112 100v8M94 82h-8M112 64v-8M124.7 94.7l5.7 5.7M99.3 94.7l-5.7 5.7M99.3 69.3l-5.7-5.7M124.7 69.3l5.7-5.7"/>
+  </g>
+</svg>

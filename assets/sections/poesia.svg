@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Lira con cuerdas">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 38c-16 12-16 44 0 56"/>
+    <path d="M156 38c16 12 16 44 0 56"/>
+    <path d="M84 38h72"/>
+    <path d="M100 42v50M120 42v50M140 42v50"/>
+    <path d="M76 94h88"/>
+  </g>
+</svg>

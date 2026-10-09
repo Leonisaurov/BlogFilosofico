@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Libro abierto con lupa">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M120 46c-14-10-34-10-48-2v76c14-8 34-8 48 2 14-10 34-10 48-2V44c-14-8-34-8-48 2Z"/>
+    <path d="M120 46v76"/>
+    <circle cx="138" cy="100" r="16"/>
+    <path d="M149 111l14 14"/>
+  </g>
+</svg>

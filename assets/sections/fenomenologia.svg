@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Conciencia orientada hacia un objeto">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84.7 50.5A36 36 0 0 1 84.7 109.5"/>
+    <path d="M95 35.8A54 54 0 0 1 95 124.2"/>
+    <path d="M105.3 21A72 72 0 0 1 105.3 139"/>
+    <circle cx="64" cy="80" r="9" fill="#956b46" stroke="none"/>
+    <circle cx="182" cy="80" r="13"/>
+    <circle cx="182" cy="80" r="4" fill="#956b46" stroke="none"/>
+  </g>
+</svg>

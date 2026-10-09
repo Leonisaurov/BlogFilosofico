@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 380" width="150" height="380" role="img" aria-label="Columna clásica (dibujo lineal)">
+  <!-- Columna dórica de perfil: ábaco, capitel, fuste estriado y basa. -->
+  <g fill="none" stroke="#956B46" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="18" y="28" width="114" height="14"/>
+    <path d="M36 42 H114 L106 68 H44 Z"/>
+    <path d="M46 68 V316"/>
+    <path d="M104 68 V316"/>
+    <path d="M60 72 V312"/>
+    <path d="M75 72 V312"/>
+    <path d="M90 72 V312"/>
+    <path d="M28 316 H122"/>
+    <rect x="22" y="316" width="106" height="14"/>
+    <rect x="12" y="330" width="126" height="16"/>
+  </g>
+</svg>

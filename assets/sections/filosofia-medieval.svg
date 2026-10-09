@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Arco ojival y rosetón">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M62 140V96c0-50 30-62 58-62s58 12 58 62v44"/>
+    <path d="M78 140V98c0-34 20-46 42-46s42 12 42 46v42"/>
+    <circle cx="120" cy="88" r="28"/>
+    <path d="M120 60v56M92 88h56M100.2 68.2l39.6 39.6M139.8 68.2l-39.6 39.6"/>
+    <path d="M40 140h160"/>
+  </g>
+</svg>

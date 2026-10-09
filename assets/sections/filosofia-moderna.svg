@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Reloj y engranaje">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="108" cy="80" r="46"/>
+    <path d="M108 80V48M108 80h30"/>
+    <path d="M108 34v9M108 126v-9M62 80h9M154 80h-9"/>
+    <circle cx="186" cy="124" r="16"/>
+    <circle cx="186" cy="124" r="6"/>
+    <path d="M202 124h7M197.3 112.7l5 5M186 108v-7M174.7 112.7l-5 5M170 124h-7M174.7 135.3l-5 5M186 140v7M197.3 135.3l5 5"/>
+  </g>
+</svg>

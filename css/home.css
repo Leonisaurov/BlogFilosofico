@@ -1,0 +1,51 @@
+/* ==========================================================================
+   home.css — Vista de cuadrícula de la página principal
+   Presentación alternativa al feed vertical, con las mismas tarjetas
+   (`.post--grid`) y la misma cuadrícula (`.card-grid`) que la página de
+   sección. Las dos vistas se preparan desde el mismo conjunto de artículos y
+   la preferencia decide cuál se muestra (atributo `data-view-mode` en <html>,
+   aplicado antes del primer pintado por el script de arranque).
+   ========================================================================== */
+
+.home-grid {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  display: none; /* solo visible en modo cuadrícula (reglas del final) */
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-soft) transparent;
+}
+
+.home-grid::-webkit-scrollbar {
+  width: 8px;
+}
+.home-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.home-grid::-webkit-scrollbar-thumb {
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+}
+
+.home-grid__inner {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(20px, 3.6vw, 40px)
+    max(var(--feed-pad-x), env(safe-area-inset-right, 0px))
+    calc(44px + env(safe-area-inset-bottom, 0px))
+    max(var(--feed-pad-x), env(safe-area-inset-left, 0px));
+}
+
+/* --- Conmutación de la vista principal ---------------------------------- */
+/* Por defecto se ve el feed vertical; en modo cuadrícula, la cuadrícula. */
+:root[data-view-mode="grid"] .app[data-view="feed"] .feed {
+  display: none;
+}
+
+:root[data-view-mode="grid"] .app[data-view="feed"] .home-grid {
+  display: block;
+}

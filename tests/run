@@ -1,0 +1,38 @@
+#!/data/data/com.termux/files/usr/bin/bash
+# tests/run — web-page-verification entry point.
+#
+# Starts the project's dev server, runs the full spec stack in headless Chromium
+# (desktop then mobile) and then in headless Firefox (desktop then mobile), stops the
+# dev server, and exits non-zero if anything failed.
+#
+# Assumes Termux paths (no /usr/bin). Browsers must already be in PATH.
+set -eu
+
+# Resolve this script's real directory, following symlinks, without `readlink -f`
+# (not guaranteed to exist). POSIX-only.
+resolve_dir() {
+  target="$1"
+  while [ -L "$target" ]; do
+    dir=$(cd -P "$(dirname "$target")" && pwd)
+    target=$(readlink "$target")
+    case "$target" in
+      /*) ;;
+      *) target="$dir/$target" ;;
+    esac
+  done
+  cd -P "$(dirname "$target")" && pwd
+}
+
+SELF="${BASH_SOURCE:-$0}"
+case "$SELF" in
+  */*) ;;
+  *) SELF=$(command -v "$SELF" 2>/dev/null || printf '%s' "$SELF") ;;
+esac
+DIR=$(resolve_dir "$SELF")
+
+if ! command -v node >/dev/null 2>&1; then
+  echo "tests/run: node is required (Node >= 22, for the built-in WebSocket client)" >&2
+  exit 3
+fi
+
+exec node "$DIR/runner.mjs" "$@"

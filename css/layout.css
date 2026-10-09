@@ -1,0 +1,395 @@
+/* ==========================================================================
+   layout.css — Estructura de tres zonas sobre papel ilustrado
+   Capas: 1) papel beige + grano  2) papel tapiz filosófico  3) interfaz
+   Solo .feed scrollea; la página (body) tiene overflow:hidden.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Papel tapiz filosófico (capa decorativa, detrás de toda la interfaz)
+   -------------------------------------------------------------------------- */
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;   /* nunca intercepta clics ni gestos */
+  user-select: none;
+}
+
+.wallpaper__item {
+  position: absolute;
+  background-color: var(--accent);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+/* Símbolo phi: gran presencia en la zona superior izquierda. */
+.wallpaper__item--phi {
+  top: 4%;
+  left: 2.5%;
+  width: clamp(120px, 19vh, 240px);
+  aspect-ratio: 1;
+  opacity: 0.22;
+  -webkit-mask-image: var(--art-phi);
+  mask-image: var(--art-phi);
+}
+
+/* Hombre de Vitruvio: motivo gráfico principal. Se usa como máscara con el
+   acento del tema: el fondo crema del JPG original se quitó (PNG con
+   transparencia), así el dibujo se apoya en el papel del tema y se ve igual de
+   bien en claro y en oscuro. */
+.wallpaper__item--vitruvio {
+  top: 7%;
+  right: 1.5%;
+  width: clamp(240px, 56vh, 560px);
+  aspect-ratio: 1;
+  opacity: 0.3;
+  -webkit-mask-image: var(--art-vitruvio);
+  mask-image: var(--art-vitruvio);
+}
+
+/* Detalle secundario y semioculto: el dibujo anterior del Hombre de Vitruvio
+   (SVG), conservado como pequeño guiño en una zona de transición, entre la
+   tarjeta, el motivo principal y la columna. */
+.wallpaper__item--vitruvio-old {
+  right: 17%;
+  bottom: 16%;
+  width: clamp(76px, 12vh, 110px);
+  aspect-ratio: 1;
+  opacity: 0.16;
+  -webkit-mask-image: var(--art-vitruvian);
+  mask-image: var(--art-vitruvian);
+}
+
+/* Retrato de Sócrates: mismo tratamiento (máscara + acento del tema). El JPG
+   original se conserva en assets/ porque la tarjeta de la sección «Filosofía
+   antigua» lo sigue usando como imagen. */
+.wallpaper__item--socrates {
+  bottom: 2%;
+  left: 1%;
+  width: clamp(210px, 34vh, 380px);
+  aspect-ratio: 2 / 3;
+  opacity: 0.28;
+  -webkit-mask-image: var(--art-socrates);
+  mask-image: var(--art-socrates);
+}
+
+/* Columna clásica: detalle pequeño, abajo a la derecha. */
+.wallpaper__item--column {
+  bottom: 5%;
+  right: 5%;
+  width: clamp(80px, 17vh, 170px);
+  aspect-ratio: 150 / 380;
+  opacity: 0.19;
+  -webkit-mask-image: var(--art-column);
+  mask-image: var(--art-column);
+}
+
+/* En móvil no hay margen lateral: los dos motivos principales se reparten la
+   franja libre superior (Vitruvio a la izquierda, Sócrates a la derecha) y se
+   prescinde de los detalles pequeños. */
+@media (max-width: 720px) {
+  .wallpaper__item--phi {
+    display: none;
+  }
+  .wallpaper__item--vitruvio {
+    top: 5%;
+    left: 3%;
+    right: auto;
+    width: min(38vw, 140px);
+    opacity: 0.28;
+  }
+  /* Variante del retrato recortada al rostro, para que se reconozca pequeño. */
+  .wallpaper__item--socrates {
+    top: 6%;
+    bottom: auto;
+    left: auto;
+    right: 2%;
+    width: min(44vw, 158px);
+    height: 100px;
+    aspect-ratio: auto;
+    opacity: 0.26;
+    -webkit-mask-size: 300% auto;
+    mask-size: 300% auto;
+    -webkit-mask-position: 48% 22%;
+    mask-position: 48% 22%;
+  }
+  .wallpaper__item--column {
+    display: none;
+  }
+  .wallpaper__item--vitruvio-old {
+    display: none;
+  }
+}
+
+/* En tema oscuro ya NO se ocultan: al quitarles el fondo crema, el dibujo se
+   tiñe con el acento del tema. Se sube un poco la opacidad para que se lean
+   sobre el papel oscuro. */
+:root[data-theme="dark"] .wallpaper__item--vitruvio {
+  opacity: 0.36;
+}
+
+:root[data-theme="dark"] .wallpaper__item--socrates {
+  opacity: 0.34;
+}
+
+:root[data-theme="dark"] .wallpaper__item--phi,
+:root[data-theme="dark"] .wallpaper__item--column {
+  opacity: 0.15;
+}
+
+:root[data-theme="dark"] .wallpaper__item--vitruvio-old {
+  opacity: 0.12;
+}
+
+/* --------------------------------------------------------------------------
+   Aplicación (por encima del papel tapiz)
+   -------------------------------------------------------------------------- */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+/* Cuando una vista ocupa toda la pantalla, se oculta la interfaz de abajo:
+   así su fondo puede ser translúcido y dejar ver el papel tapiz sin que las
+   tarjetas del feed se transparenten detrás. */
+.app[data-view="reader"] .site-header,
+.app[data-view="editor"] .site-header,
+.app[data-view="pending"] .site-header,
+.app[data-view="reader"] .feed,
+.app[data-view="editor"] .feed,
+.app[data-view="pending"] .feed,
+.app[data-view="reader"] .dock,
+.app[data-view="editor"] .dock,
+.app[data-view="pending"] .dock {
+  visibility: hidden;
+}
+
+/* En «Secciones» el encabezado y el menú siguen visibles (es una vista interna,
+   no una capa a pantalla completa): la vista ocupa la zona central, la fila que
+   normalmente usa el feed, con su propio scroll. */
+.app[data-view="sections"] .feed,
+.app[data-view="sections"] .dock {
+  display: none;
+}
+
+/* El slot es transparente para el grid: .site-header es la fila 1 real. */
+.site-header-slot {
+  display: contents;
+}
+
+/* --------------------------------------------------------------------------
+   A. Encabezado superior (inmóvil)
+   -------------------------------------------------------------------------- */
+.site-header {
+  position: relative;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) max(var(--feed-pad-x), env(safe-area-inset-right, 0px)) 0
+    max(var(--feed-pad-x), env(safe-area-inset-left, 0px));
+  background-color: color-mix(in srgb, var(--bg) 82%, transparent);
+  background-image: var(--grain);
+  border-bottom: 1px solid var(--line);
+  box-shadow: inset 0 -2px 0 -1px color-mix(in srgb, var(--accent) 45%, transparent);
+  backdrop-filter: blur(12px) saturate(120%);
+  -webkit-backdrop-filter: blur(12px) saturate(120%);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand__mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent-deep);
+}
+
+/* El símbolo es un SVG (no un glifo de texto): así queda centrado
+   geométricamente, sin depender de las métricas de la fuente. */
+.brand__mark svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+.brand__name {
+  font-family: var(--font-serif);
+  font-size: clamp(1.02rem, 1rem + 0.6vw, 1.3rem);
+  letter-spacing: 0.01em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botón de menú: icono café, reconocible sobre el beige. */
+.hamburger {
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  width: 34px;
+  height: 34px;
+  padding: 8px 7px;
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 8px;
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  cursor: pointer;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease),
+    color 0.25s var(--ease);
+}
+
+.hamburger:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hamburger[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.hamburger span {
+  display: block;
+  height: 1.5px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
+.hamburger span:nth-child(2) {
+  width: 70%;
+}
+
+/* --------------------------------------------------------------------------
+   B. Área central de publicaciones (único contenedor con scroll)
+   -------------------------------------------------------------------------- */
+.feed {
+  position: relative;
+  z-index: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;         /* sin encadenar scroll a la página */
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: y mandatory;
+  scroll-padding-block: var(--track-pad);
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-soft) transparent;
+}
+
+.feed::-webkit-scrollbar {
+  width: 8px;
+}
+.feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+.feed::-webkit-scrollbar-thumb {
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
+}
+
+.feed__track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--slide-gap);
+  padding: var(--track-pad) max(var(--feed-pad-x), env(safe-area-inset-right, 0px))
+    var(--track-pad) max(var(--feed-pad-x), env(safe-area-inset-left, 0px));
+}
+
+/* Cada publicación: ~3/4 de la altura disponible, centrada por el snap. */
+.post {
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: min(100%, var(--card-max));
+  height: var(--slide-h);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: var(--surface);
+  background-image: var(--grain);
+  box-shadow: var(--shadow-card);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transform: translateZ(0);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+    opacity var(--dur) var(--ease);
+}
+
+/* La tarjeta activa gana presencia; las vecinas quedan discretamente atrás. */
+.post[data-active="false"] {
+  opacity: 0.66;
+  transform: scale(0.978);
+}
+
+@media (hover: hover) {
+  .post:not([data-static="true"]):hover {
+    box-shadow: var(--shadow-lift);
+    transform: translateY(-4px);
+  }
+  .post[data-active="false"]:not([data-static="true"]):hover {
+    opacity: 0.88;
+  }
+}
+
+.post:not([data-static="true"]):active {
+  transform: scale(0.994);
+}
+
+/* Tarjeta de previsualización: no es un enlace y no reacciona al puntero. */
+.post[data-static="true"] {
+  cursor: default;
+  opacity: 1;
+  transform: none;
+}
+
+/* --------------------------------------------------------------------------
+   C. Zona inferior (inmóvil y vacía — reservada para versiones futuras)
+   -------------------------------------------------------------------------- */
+.dock {
+  position: relative;
+  z-index: var(--z-header);
+  height: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: transparent;
+  box-shadow: inset 0 14px 22px -24px color-mix(in srgb, var(--accent-deep) 60%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+   Preferencias de accesibilidad
+   -------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .post,
+  .post[data-active="false"] {
+    transform: none;
+  }
+}

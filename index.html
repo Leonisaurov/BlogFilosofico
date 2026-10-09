@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f3ebdd" />
+  <meta name="description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta name="author" content="Blog de Filosofía" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://blog-filosofico.surge.sh/" />
+  <title>Blog de Filosofía</title>
+
+  <!--
+    Previsualización al compartir (Open Graph + Twitter Card).
+    Acá quedan los metadatos de la portada del sitio; js/lib/meta.js los
+    actualiza al navegar (título, descripción y portada de la vista activa) y
+    convierte las rutas en absolutas.
+  -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Blog de Filosofía" />
+  <meta property="og:locale" content="es_AR" />
+  <meta property="og:title" content="Blog de Filosofía" />
+  <meta property="og:description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta property="og:url" content="https://blog-filosofico.surge.sh/" />
+  <meta property="og:image" content="https://blog-filosofico.surge.sh/assets/social-preview.png" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Blog de Filosofía: el Hombre de Vitruvio dibujado en tinta café sobre papel beige." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Blog de Filosofía" />
+  <meta name="twitter:description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta name="twitter:image" content="https://blog-filosofico.surge.sh/assets/social-preview.png" />
+  <meta name="twitter:image:alt" content="Blog de Filosofía: el Hombre de Vitruvio dibujado en tinta café sobre papel beige." />
+
+  <link rel="icon" href="./assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./assets/favicon.svg" />
+
+  <!--
+    Arranque de preferencias: aplica el tema y el modo de vista ANTES del
+    primer pintado, leyendo el almacenamiento local. Así no aparece un instante
+    el tema o la vista equivocados. Si no hay preferencia (o falla), quedan los
+    valores por defecto: modo claro y feed vertical.
+  -->
+  <script>
+    (function () {
+      var root = document.documentElement;
+      var theme = "light";
+      var viewMode = "feed";
+      try {
+        var raw = window.localStorage.getItem("blogfilosofia.preferencias.v1");
+        var prefs = raw ? JSON.parse(raw) : null;
+        if (prefs) {
+          if (prefs.theme === "dark") theme = "dark";
+          if (prefs.viewMode === "grid") viewMode = "grid";
+        }
+      } catch (error) {
+        /* almacenamiento no disponible: se usan los valores por defecto */
+      }
+      root.setAttribute("data-theme", theme);
+      root.setAttribute("data-view-mode", viewMode);
+    })();
+  </script>
+
+  <!-- Sistema visual: tokens y tipografía → layout → tarjeta → home →
+       secciones → lector → menú → configuración → editor → Markdown →
+       responsive -->
+  <link rel="stylesheet" href="./css/tokens.css" />
+  <link rel="stylesheet" href="./css/layout.css" />
+  <link rel="stylesheet" href="./css/card.css" />
+  <link rel="stylesheet" href="./css/home.css" />
+  <link rel="stylesheet" href="./css/sections.css" />
+  <link rel="stylesheet" href="./css/reader.css" />
+  <link rel="stylesheet" href="./css/menu.css" />
+  <link rel="stylesheet" href="./css/settings.css" />
+  <link rel="stylesheet" href="./css/editor.css" />
+  <link rel="stylesheet" href="./css/markdown.css" />
+  <link rel="stylesheet" href="./css/responsive.css" />
+</head>
+<body>
+  <!--
+    Capas del fondo (de atrás hacia adelante):
+      1. Color beige + grano de papel (body, en css/tokens.css)
+      2. .wallpaper  → papel tapiz filosófico ilustrado (capa decorativa)
+      3. .app        → interfaz y contenido
+  -->
+  <div class="wallpaper" aria-hidden="true">
+    <span class="wallpaper__item wallpaper__item--phi"></span>
+    <span class="wallpaper__item wallpaper__item--vitruvio"></span>
+    <span class="wallpaper__item wallpaper__item--socrates"></span>
+    <span class="wallpaper__item wallpaper__item--column"></span>
+    <span class="wallpaper__item wallpaper__item--vitruvio-old"></span>
+  </div>
+
+  <!--
+    Estructura de tres zonas (fijas arriba y abajo, scroll solo en el centro):
+      .site-header → encabezado fijo (renderizado por js/components/header.js)
+      .feed        → área central con scroll snap (js/components/feed.js)
+      .dock        → zona inferior, vacía a propósito (reservada para el futuro)
+      .reader      → vista de lectura de un artículo (js/components/reader.js)
+  -->
+  <div class="app" id="app" data-view="feed">
+    <div id="site-header" class="site-header-slot"></div>
+
+    <main class="feed" id="feed" tabindex="0" aria-label="Publicaciones">
+      <div class="feed__track" id="feed-track"></div>
+    </main>
+
+    <!-- Vista de cuadrícula de la página principal (misma fuente de datos y
+         mismas tarjetas que el feed). La preferencia decide cuál se muestra;
+         ambas se preparan desde la carga inicial. -->
+    <div class="home-grid" id="home-grid" role="region" aria-label="Publicaciones en cuadrícula"></div>
+
+    <!-- Explorador temático (rutas #/secciones y #/secciones/<slug>):
+         ocupa la zona central conservando el encabezado y el menú. -->
+    <section class="sections" id="sections" hidden aria-label="Secciones"></section>
+
+    <!-- Zona inferior: intencionalmente vacía. No agregar contenido por ahora. -->
+    <div class="dock" id="dock" aria-hidden="true"></div>
+
+    <section class="reader" id="reader" hidden aria-label="Lectura del artículo"></section>
+
+    <!-- Vistas provisionales y editor Markdown (rutas #/configuracion y
+         #/crear). -->
+    <section class="pending" id="pending" hidden aria-label="Sección pendiente"></section>
+    <section class="editor" id="editor" hidden aria-label="Editor de artículos"></section>
+  </div>
+
+  <noscript>
+    <div class="noscript">
+      <h1>Blog de Filosofía</h1>
+      <p>Esta primera versión se genera con JavaScript para poder ampliar las publicaciones desde una única fuente de datos. Activá JavaScript para navegar el catálogo.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

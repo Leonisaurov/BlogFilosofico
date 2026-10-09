@@ -1,0 +1,219 @@
+/* ==========================================================================
+   reader.css — Página individual de lectura
+   Capa completa sobre el feed, con scroll propio y URL propia.
+   ========================================================================== */
+
+.reader {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-reader);
+  /* Transparente: deja ver el papel beige, el grano y el papel tapiz.
+     El texto se apoya en el panel sólido de .reader__article. */
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+
+.reader[hidden] {
+  display: none;
+}
+
+.reader.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+/* El papel tapiz filosófico (capa .wallpaper) se ve a través de este fondo
+   translúcido: la identidad ilustrada acompaña la lectura. */
+
+/* --- Barra superior del lector ----------------------------------------- */
+.reader__bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: calc(var(--header-h) + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px)
+    max(var(--feed-pad-x), env(safe-area-inset-right, 0px)) 0
+    max(var(--feed-pad-x), env(safe-area-inset-left, 0px));
+  background-color: color-mix(in srgb, var(--bg) 88%, transparent);
+  background-image: var(--grain);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+}
+
+.reader__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--accent-deep);
+  transition: background 0.25s var(--ease), color 0.25s var(--ease),
+    border-color 0.25s var(--ease);
+}
+
+.reader__back svg {
+  width: 15px;
+  height: 15px;
+}
+
+.reader__back:hover {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.reader__bar-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Cuerpo del artículo ----------------------------------------------- */
+.reader__article {
+  position: relative;
+  z-index: 1;
+  max-width: 76ch;
+  margin: clamp(16px, 3vw, 34px) auto calc(56px + env(safe-area-inset-bottom, 0px));
+  padding: clamp(22px, 5vw, 46px) clamp(20px, 5vw, 52px) clamp(40px, 6vw, 64px);
+  background-color: color-mix(in srgb, var(--surface) 90%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.reader__category {
+  color: var(--accent-deep);
+}
+
+.reader__title {
+  margin-top: 0.35em;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: clamp(1.9rem, 1.3rem + 4.2vw, 3.1rem);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  text-wrap: balance;
+}
+
+.reader__meta {
+  margin-top: 0.9em;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.reader__cover {
+  margin: clamp(22px, 5vw, 36px) 0 0;
+}
+
+.reader__cover img,
+.reader__cover .reader__cover-fallback {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background-position: center;
+  background-size: cover;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background-color: var(--surface-sunken);
+}
+
+.reader__credit {
+  margin-top: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.reader__lede {
+  margin-top: clamp(24px, 5vw, 40px);
+  font-family: var(--font-serif);
+  font-size: clamp(1.12rem, 1rem + 0.6vw, 1.32rem);
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--text);
+  border-left: 2px solid var(--accent);
+  padding-left: clamp(14px, 3vw, 22px);
+}
+
+.reader__body {
+  margin-top: clamp(20px, 4vw, 32px);
+}
+
+.reader__body p {
+  font-family: var(--font-serif);
+  font-size: clamp(1.04rem, 0.98rem + 0.35vw, 1.18rem);
+  line-height: 1.78;
+  color: var(--text-2);
+}
+
+.reader__body p + p {
+  margin-top: 1.1em;
+}
+
+/* Capitular en el primer párrafo: solo si el cuerpo empieza con texto. */
+.reader__body.markdown > p:first-child::first-letter {
+  float: left;
+  margin: 0.06em 0.1em 0 0;
+  font-size: 3.1em;
+  line-height: 0.82;
+  color: var(--accent);
+}
+
+.reader__footer {
+  margin-top: clamp(36px, 7vw, 60px);
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.reader__next {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background-color: var(--surface);
+  background-image: var(--grain);
+  transition: border-color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.reader__next:hover {
+  border-color: var(--accent-deep);
+  transform: translateX(4px);
+}
+
+.reader__next span:first-child {
+  font-size: 0.68rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.reader__next span:last-child {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--text);
+}

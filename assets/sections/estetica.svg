@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Marco con paisaje">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="58" y="38" width="124" height="88" rx="4"/>
+    <circle cx="148" cy="64" r="12"/>
+    <path d="M62 116C82 96 100 96 120 112 140 96 160 96 178 116"/>
+  </g>
+</svg>

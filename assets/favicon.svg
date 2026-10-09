@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Blog de Filosofía">
+  <rect width="64" height="64" rx="14" fill="#F3EBDD"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#D9CBB7" stroke-width="1.5"/>
+  <circle cx="32" cy="26" r="9" fill="none" stroke="#A17C59" stroke-width="3"/>
+  <path d="M32 35v17M24 52h16M22 41h20" fill="none" stroke="#70543D" stroke-width="3" stroke-linecap="round"/>
+</svg>

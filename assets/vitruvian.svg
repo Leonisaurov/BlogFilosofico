@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" width="640" height="640" role="img" aria-label="Hombre de Vitruvio (dibujo lineal)">
+  <!-- Ilustración decorativa: círculo, cuadrado y figura humana en dos poses.
+       Un único tono café; el fondo beige actúa como espacio negativo. -->
+  <g fill="none" stroke="#956B46" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.55">
+    <circle cx="320" cy="330" r="250"/>
+    <rect x="70" y="80" width="500" height="500"/>
+    <line x1="320" y1="52" x2="320" y2="608"/>
+    <line x1="42" y1="198" x2="598" y2="198"/>
+    <line x1="70" y1="330" x2="570" y2="330"/>
+  </g>
+
+  <g fill="none" stroke="#956B46" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Cabeza y cuello -->
+    <circle cx="320" cy="116" r="30"/>
+    <path d="M320 146 V186"/>
+    <!-- Hombros y torso -->
+    <path d="M248 200 Q320 176 392 200"/>
+    <path d="M320 186 V330"/>
+    <path d="M262 330 Q320 350 378 330"/>
+    <path d="M286 236 Q320 226 354 236"/>
+    <!-- Brazos extendidos -->
+    <path d="M248 200 H110"/>
+    <path d="M392 200 H530"/>
+    <circle cx="102" cy="200" r="8"/>
+    <circle cx="538" cy="200" r="8"/>
+    <!-- Brazos elevados -->
+    <path d="M248 200 L159 138"/>
+    <path d="M392 200 L481 138"/>
+    <circle cx="153" cy="134" r="8"/>
+    <circle cx="487" cy="134" r="8"/>
+    <!-- Piernas juntas -->
+    <path d="M320 330 V566"/>
+    <path d="M320 566 H350"/>
+    <!-- Piernas separadas -->
+    <path d="M262 330 L180 532"/>
+    <path d="M378 330 L460 532"/>
+    <path d="M180 532 H140"/>
+    <path d="M460 532 H500"/>
+    <!-- Ombligo -->
+    <circle cx="320" cy="330" r="4.5"/>
+  </g>
+</svg>

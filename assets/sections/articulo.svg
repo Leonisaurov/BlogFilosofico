@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Página de periódico con dos columnas">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="56" y="28" width="128" height="104" rx="4"/>
+    <path d="M56 50h128"/>
+    <path d="M70 40h46"/>
+    <path d="M70 68h42M70 84h42M70 100h42M70 116h42"/>
+    <path d="M128 68h42M128 84h42M128 100h42M128 116h42"/>
+  </g>
+</svg>

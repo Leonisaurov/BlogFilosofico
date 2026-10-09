@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Ojo con destellos">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 80c26-30 102-30 128 0-26 30-102 30-128 0Z"/>
+    <circle cx="120" cy="80" r="22"/>
+    <circle cx="120" cy="80" r="9" fill="#956b46" stroke="none"/>
+    <path d="M84 40l8 10M120 30v12M156 40l-8 10"/>
+  </g>
+</svg>
