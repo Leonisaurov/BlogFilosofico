@@ -73,9 +73,9 @@ const TOOL_GROUPS = [
 ];
 
 const MODES = [
-  { mode: "edit", label: "Edición" },
-  { mode: "split", label: "Dividido" },
-  { mode: "preview", label: "Vista previa" },
+  { mode: "edit", label: "Edición", short: "Ed." },
+  { mode: "split", label: "Dividido", short: "Div." },
+  { mode: "preview", label: "Vista previa", short: "Prev." },
 ];
 
 const KINDS = [
@@ -202,19 +202,37 @@ export function createEditor(root, { onClose } = {}) {
       </div>
 
       <div class="editor__bar-right">
-        <div class="editor__modes" role="group" aria-label="Modo de visualización">
+        <div class="editor__modes editor__modes--kind" role="group" aria-label="Tipo de aportación">
+          ${KINDS.map(
+            (item) => `
+            <button type="button" class="editor__mode editor__mode--kind"
+                    data-kind-btn="${item.kind}"
+                    aria-pressed="${item.kind === "normal"}">${item.label}</button>`
+          ).join("")}
+        </div>
+        <div class="editor__modes editor__modes--view" role="group" aria-label="Modo de visualización">
           ${MODES.map(
             (item) => `
             <button type="button" class="editor__mode" data-mode-btn="${item.mode}"
-                    aria-pressed="${item.mode === "edit"}">${item.label}</button>`
+                    aria-label="${item.label}" aria-pressed="${item.mode === "edit"}">
+              <span class="editor__label-wide">${item.label}</span>
+              <span class="editor__label-short" aria-hidden="true">${item.short}</span>
+            </button>`
           ).join("")}
         </div>
-        <button class="editor__ghost" type="button" data-editor-new>Nueva</button>
-        <button class="editor__ghost editor__download" type="button" data-editor-download>
-          Descargar aportación (.md)
+        <button class="editor__ghost" type="button" data-editor-new aria-label="Nueva">
+          <span class="editor__label-wide">Nueva</span>
+          <span class="editor__label-short" aria-hidden="true">+</span>
         </button>
-        <button class="editor__share" type="button" data-editor-proposal data-editor-share>
-          Enviar aportación por correo
+        <button class="editor__ghost editor__download" type="button" data-editor-download
+                aria-label="Descargar aportación (.md)">
+          <span class="editor__label-wide">Descargar aportación (.md)</span>
+          <span class="editor__label-short" aria-hidden="true">↓ .md</span>
+        </button>
+        <button class="editor__share" type="button" data-editor-proposal data-editor-share
+                aria-label="Enviar aportación por correo">
+          <span class="editor__label-wide">Enviar aportación por correo</span>
+          <span class="editor__label-short" aria-hidden="true">✉</span>
         </button>
       </div>
     </header>
@@ -234,6 +252,7 @@ export function createEditor(root, { onClose } = {}) {
           <p class="editor__slug">URL de la publicación:
             <code data-editor-slug>#/articulos/…</code>
           </p>
+          <p class="editor__kind-badge" data-editor-kind-badge>Documento oficial</p>
 
           <div class="editor__meta">
             <label class="editor__field editor__field--wide">
@@ -257,31 +276,13 @@ export function createEditor(root, { onClose } = {}) {
               <input data-field="author" placeholder="Nombre y apellido" />
             </label>
 
-            <div class="editor__field editor__field--wide editor__kind">
-              <span>Tipo de texto</span>
-              <div class="editor__modes editor__modes--kind" role="group" aria-label="Tipo de texto">
-                ${KINDS.map(
-                  (item) => `
-                  <button type="button" class="editor__mode editor__mode--kind"
-                          data-kind-btn="${item.kind}"
-                          aria-pressed="${item.kind === "normal"}">${item.label}</button>`
-                ).join("")}
-              </div>
-              <p class="editor__kind-hint">
-                «Documento oficial» adopta formato académico: el texto se acompaña de un
-                documento externo. Subilo a Google Drive y pegá el enlace del visor.
-              </p>
-            </div>
-
             <div class="editor__official" data-official-fields hidden>
               <label class="editor__field">
                 <span>Cita bajo la portada</span>
                 <input data-field="coverCredit" placeholder="Autor, obra · dominio público" />
               </label>
-              <label class="editor__field">
-                <span>Documento · URL HTTPS del visor externo</span>
-                <input data-field="documentUrl" type="url" placeholder="https://visor.ejemplo.com/documento" />
-              </label>
+              <!-- Canal interno: el visor se deriva del enlace de Drive, nunca se pide. -->
+              <input data-field="documentUrl" type="hidden" />
               <div class="editor__field editor__field--wide editor__drive">
                 <button type="button" class="editor__ghost" data-drive-upload>
                   Subir documento a Google Drive
@@ -478,7 +479,7 @@ export function createEditor(root, { onClose } = {}) {
 
           <label class="proposal__check" data-proposal-check-official-row hidden>
             <input type="checkbox" data-proposal-check-official />
-            <span>Revisé la URL HTTPS del visor o adjunté el .docx y el equipo
+            <span>Revisé el enlace de Google Drive o adjunté el .docx y el equipo
               autorizó el estado «documento pendiente».</span>
           </label>
         </fieldset>
@@ -596,6 +597,8 @@ export function createEditor(root, { onClose } = {}) {
   let previewTimer = 0;
   let historyTimer = 0;
   let proposalCloseTimer = 0;
+  // Modo que había antes de entrar en «Documento oficial», para restaurarlo al volver.
+  let modeBeforeOfficial = "edit";
   let history = [];
   let historyIndex = 0;
   let cardPreview = null;
@@ -695,8 +698,10 @@ export function createEditor(root, { onClose } = {}) {
     kindButtons.forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.kindBtn === selectedKind));
     });
+    // El CSS oculta lo que no se usa en oficial desde la barra y el workspace.
+    root.dataset.kind = checked ? "oficial" : "normal";
+    workspace.dataset.kind = checked ? "oficial" : "normal";
     officialFields.hidden = !checked;
-    fieldEls.documentUrl.disabled = !checked;
     fieldEls.driveLink.disabled = !checked;
     if (driveUploadButton) driveUploadButton.disabled = !checked;
     fieldEls.coverCredit.disabled = !checked;
@@ -704,6 +709,13 @@ export function createEditor(root, { onClose } = {}) {
     if (!checked) {
       state.documentoPendiente = false;
       officialPending.checked = false;
+    }
+    // Sin Markdown no hay modos Edición/Dividido: la vista previa es la única.
+    if (checked && state.mode !== "preview") {
+      modeBeforeOfficial = state.mode;
+      setMode("preview");
+    } else if (!checked && state.mode === "preview" && modeBeforeOfficial !== "preview") {
+      setMode(modeBeforeOfficial);
     }
   }
 
@@ -717,12 +729,23 @@ export function createEditor(root, { onClose } = {}) {
       (button) => button.getAttribute("aria-pressed") === "true"
     );
     state.kind = pressedKind?.dataset.kindBtn === "oficial" ? "oficial" : "";
-    state.documentUrl = fieldEls.documentUrl.value;
     state.driveLink = fieldEls.driveLink.value;
     state.coverCredit = fieldEls.coverCredit.value;
     state.documentoPendiente = officialPending.checked;
-    // XOR: declarar el documento pendiente descarta la URL del visor.
-    if (state.documentoPendiente) state.documentUrl = "";
+    // El visor es un canal interno: nunca se lee del campo oculto. Se deriva del
+    // enlace de Drive; un host ajeno conserva la última URL válida (XOR intacto).
+    if (state.documentoPendiente) {
+      state.documentUrl = "";
+    } else if (state.driveLink.trim()) {
+      try {
+        state.documentUrl = documentUrlFromDriveLink(state.driveLink);
+      } catch {
+        /* conserva la última URL válida; el enlace rechazado no se promueve */
+      }
+    }
+    // Con `driveLink` vacío se conserva `documentUrl`: así sobrevive un borrador
+    // legacy que solo traía la URL del visor. El borrado explícito lo gestiona
+    // el event handler del enlace de Drive.
     // El contenido también se lee del DOM: sin esta línea `writeForm()` volvería
     // a escribir el valor anterior y el borrador perdería el cuerpo Markdown.
     state.content = contentEl.value;
@@ -1239,13 +1262,21 @@ export function createEditor(root, { onClose } = {}) {
   function openProposal() {
     const title = state.title.trim();
     const content = state.content.trim();
-    if (!title || !content) {
+    const official = state.kind === "oficial";
+    // En oficial no hay Markdown: basta el título y el documento (o su estado
+    // pendiente). El foco va siempre a un campo visible, nunca al textarea oculto.
+    const ready = official
+      ? !!title && (!!state.documentUrl.trim() || state.documentoPendiente)
+      : !!title && !!content;
+    if (!ready) {
       setNotice(
         !title
           ? "Agregá un título antes de preparar el envío."
-          : "Escribí el contenido de la aportación antes de preparar el envío."
+          : official
+            ? "Pegá el enlace de Google Drive o marcá el documento pendiente antes de preparar el envío."
+            : "Escribí el contenido de la aportación antes de preparar el envío."
       );
-      (!title ? fieldEls.title : contentEl).focus();
+      (!title ? fieldEls.title : official ? fieldEls.driveLink : contentEl).focus();
       return;
     }
 
@@ -1276,7 +1307,7 @@ export function createEditor(root, { onClose } = {}) {
     setProposalStatus(proposalCoverStatus, "Pendiente", "pending");
     if (proposal.official) {
       proposalOfficialText.textContent = state.documentUrl
-        ? `El texto oficial declara la URL ${state.documentUrl} (visor de Google Drive). Confirmá que el enlace sea público —«Cualquiera con el enlace»— y que apunte al visor correcto: el archivo no se aloja en este sitio.`
+        ? `El texto oficial declara el enlace de Google Drive ${state.documentUrl}. Confirmá que sea público —«Cualquiera con el enlace»— y que apunte al documento correcto: el archivo no se aloja en este sitio.`
         : "El documento queda pendiente de elegir servicio. Adjuntá el .docx al correo y confirmá que el equipo autorizó ese estado.";
       setProposalStatus(proposalOfficialStatus, "Pendiente", "pending");
     }
@@ -1538,29 +1569,40 @@ export function createEditor(root, { onClose } = {}) {
     fieldEls[name].addEventListener("input", onInput);
   });
 
-  // Campos del «Texto oficial»: la cita y la URL se tratan como el resto de
-  // datos (borrador, historial y previsualización se actualizan igual).
-  ["coverCredit", "documentUrl"].forEach((name) => {
-    fieldEls[name].addEventListener("input", onInput);
-  });
+  // La cita se trata como el resto de datos; `documentUrl` es un canal interno
+  // oculto, así que no escucha eventos del usuario.
+  fieldEls.coverCredit.addEventListener("input", onInput);
   officialPending.addEventListener("change", onInput);
 
+  function refreshFromState() {
+    writeForm();
+    schedulePreview();
+    schedulePersist();
+    scheduleHistory();
+    updateShareState();
+  }
+
   /**
-   * Drive: el enlace pegado se convierte al visor y pasa a `documentUrl`.
-   * Nunca se escribe `driveLink` en el `.md`: es solo estado del borrador.
+   * Drive: el enlace pegado se convierte al visor y pasa a `documentUrl` (campo
+   * oculto). Enlace vacío borra la URL; host ajeno conserva la última válida y
+   * avisa sin lanzar hacia `onInput`. `driveLink` nunca se emite al `.md`.
    */
   function convertirEnlaceDrive(valor) {
+    const texto = String(valor ?? "").trim();
+    if (!texto) {
+      state.driveLink = "";
+      state.documentUrl = "";
+      setNotice("");
+      refreshFromState();
+      return true;
+    }
     try {
-      const url = documentUrlFromDriveLink(valor);
-      state.documentUrl = url;
+      state.driveLink = texto;
+      state.documentUrl = documentUrlFromDriveLink(texto);
       state.documentoPendiente = false;
       officialPending.checked = false;
       setNotice("");
-      writeForm();
-      schedulePreview();
-      schedulePersist();
-      scheduleHistory();
-      updateShareState();
+      refreshFromState();
       return true;
     } catch (error) {
       setNotice(error.message);
@@ -1580,14 +1622,29 @@ export function createEditor(root, { onClose } = {}) {
     const texto = event.clipboardData?.getData("text") ?? "";
     if (!texto) return;
     event.preventDefault();
-    state.driveLink = texto.trim();
-    fieldEls.driveLink.value = state.driveLink;
-    if (!convertirEnlaceDrive(state.driveLink)) fieldEls.driveLink.focus();
+    fieldEls.driveLink.value = texto.trim();
+    if (!convertirEnlaceDrive(fieldEls.driveLink.value)) fieldEls.driveLink.focus();
   });
   fieldEls.driveLink.addEventListener("input", () => {
-    state.driveLink = fieldEls.driveLink.value;
-    if (/drive\.google\.com/i.test(state.driveLink)) convertirEnlaceDrive(state.driveLink);
-    else onInput();
+    const texto = fieldEls.driveLink.value.trim();
+    if (!texto) {
+      convertirEnlaceDrive("");
+      return;
+    }
+    if (/drive\.google\.com/i.test(texto)) {
+      convertirEnlaceDrive(texto);
+    } else {
+      onInput(); // readForm conserva la última URL válida si el host es ajeno
+      // Avisar también al escribir (no solo al pegar), sin tocar el XOR ni la
+      // derivación: un host ajeno no reemplaza la URL del visor ya guardada.
+      if (/^https?:\/\//i.test(texto)) {
+        try {
+          documentUrlFromDriveLink(texto);
+        } catch (error) {
+          setNotice(error.message);
+        }
+      }
+    }
   });
 
   // La URL de portada se gestiona aparte: escribir una URL descarta la local.

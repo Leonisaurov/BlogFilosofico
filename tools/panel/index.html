@@ -50,7 +50,7 @@
         </fieldset>
         <label>Autor <input name="author" /></label>
         <label>Fecha de creación <input name="createdAt" type="date" /></label>
-        <label>Contenido (Markdown) <textarea name="content" rows="9"></textarea></label>
+        <label class="campo-contenido">Contenido (Markdown) <textarea name="content" rows="9"></textarea></label>
         <label>Portada local (JPG/PNG/WebP) <input name="portada" type="file" accept="image/jpeg,image/png,image/webp" /></label>
         <label>Cita bajo la portada (<code>cover.credit</code>) <input name="credit" /></label>
         <div class="campo-kind" role="group" aria-label="Tipo de texto">
@@ -59,9 +59,10 @@
             <button type="button" data-kind="normal" aria-pressed="true">Redacción</button>
             <button type="button" data-kind="oficial" aria-pressed="false">Documento oficial</button>
           </div>
-          <p class="nota">«Documento oficial» adopta formato académico: el texto se acompaña de un documento externo. Subilo a Google Drive y pegá el enlace del visor.</p>
+          <p class="nota">«Documento oficial» adopta formato académico: el texto se acompaña de un documento externo. Subilo a Google Drive y pegá el enlace compartido.</p>
         </div>
-        <label>URL del documento (solo HTTPS) <input name="documentUrl" type="url" placeholder="https://…" /></label>
+        <!-- Canal interno: el visor se deriva del enlace de Drive, nunca se pide. -->
+        <input name="documentUrl" data-field="documentUrl" type="hidden" />
         <div class="drive">
           <button type="button" id="boton-drive">Subir documento a Google Drive</button>
           <label>Enlace de Google Drive

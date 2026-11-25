@@ -1,8 +1,10 @@
 // oficial.spec.mjs — Opción «Texto oficial / formato académico» de extremo a extremo.
 //
-// Comprueba el tipo en el catálogo, el estado del editor (guardar → recargar →
-// descargar .md), la cita compartida, el aviso sin iframe y el paso condicional
-// del diálogo de envío. La lista de hosts está cerrada: nunca se crea un iframe.
+// Comprueba el tipo en el catálogo, el switch de la barra, el workspace sin
+// Markdown, el estado del editor (guardar → recargar → descargar .md), la cita
+// compartida, el visor de Drive derivado del enlace y el paso condicional del
+// diálogo de envío. La lista de hosts está cerrada: el iframe solo se crea si
+// el host coincide; el campo `documentUrl` es un canal interno oculto.
 
 export default {
   name: "oficial",
@@ -20,10 +22,74 @@ export default {
       page.waitForSelector(selector, { timeout: 8000, ...options }).catch((error) => {
         throw new Error(`waitForSelector "${label}": ${error.message}`);
       });
-    // Clics reales en el switch segmentado: el editor deriva `state.kind` del
-    // botón con aria-pressed="true" (ya no hay checkbox que dispare `change`).
+    // Clics reales en el switch segmentado de la barra: el editor deriva
+    // `state.kind` del botón con aria-pressed="true".
     const setOfficial = (activo) =>
       page.click(`[data-kind-btn="${activo ? "oficial" : "normal"}"]`);
+    // El usuario pega el enlace compartido; la URL del visor nunca se escribe.
+    const pegarDrive = (texto) =>
+      page.evaluate((valor) => {
+        const campo = document.querySelector('[data-field="driveLink"]');
+        const evento = new Event("paste", { bubbles: true, cancelable: true });
+        Object.defineProperty(evento, "clipboardData", {
+          value: { getData: () => valor },
+        });
+        campo.dispatchEvent(evento);
+      }, texto);
+    const leerDocumento = () =>
+      page.evaluate(() => ({
+        url: document.querySelector('[data-field="documentUrl"]').value,
+        pendiente: document.querySelector("[data-official-pending]").checked,
+        aviso: document.querySelector("[data-editor-notice]")?.textContent || "",
+      }));
+    const urlGuardada = () =>
+      page.evaluate(() => {
+        const value = localStorage.getItem("blogfilosofia.borrador.v2");
+        const draft = value ? JSON.parse(value) : null;
+        return draft?.publication?.documentUrl ?? "";
+      });
+    // getBoundingClientRect() de los grupos visibles de la barra a 1440/720/375 px.
+    // Solo se cuentan los elementos en flujo (en oficial el grupo de vistas se oculta).
+    const medirBarra = async () => {
+      const medidas = await page.evaluate(() => ({
+        width: innerWidth,
+        height: innerHeight,
+        dpr: devicePixelRatio,
+      }));
+      const resultados = [];
+      for (const ancho of [1440, 720, 375]) {
+        await page.setViewport({
+          width: ancho,
+          height: medidas.height,
+          deviceScaleFactor: medidas.dpr,
+        });
+        const barra = await page.evaluate(() => {
+          const grupos = [...document.querySelectorAll(".editor__bar-right > *")]
+            .filter((el) => getComputedStyle(el).display !== "none")
+            .map((el) => el.getBoundingClientRect());
+          const tops = grupos.map((r) => r.top).sort((a, b) => a - b);
+          let filas = tops.length ? 1 : 0;
+          for (let i = 1; i < tops.length; i += 1) {
+            if (tops[i] - tops[i - 1] > 8) filas += 1;
+          }
+          return {
+            filas,
+            desborde: document.documentElement.scrollWidth - innerWidth,
+            dentro: grupos.every((r) => r.left >= -1 && r.right <= innerWidth + 1),
+            rects: grupos.map((r) => [Math.round(r.top), Math.round(r.left), Math.round(r.right)]),
+          };
+        });
+        resultados.push({ ancho, ...barra });
+      }
+      await page.setViewport({
+        width: medidas.width,
+        height: medidas.height,
+        deviceScaleFactor: medidas.dpr,
+      });
+      return resultados;
+    };
+    const barraCabe = (resultados) =>
+      resultados.every((r) => r.filas <= 2 && r.desborde === 0 && r.dentro);
 
     // 1) El tipo «Texto oficial» está en el catálogo (grupo «Por tipo de texto»).
     await page.evaluate(() => {
@@ -32,11 +98,23 @@ export default {
     await waitSel("catálogo", 'a.section-card[href="#/secciones/texto-oficial"]');
     t.assert(true, "la sección «Texto oficial» está en el catálogo");
 
-    // 2) Editor: marcar la opción y completar los campos académicos.
+    // 2) Editor: el switch vive en la barra; el Markdown se escribe en Redacción.
     await page.evaluate(() => {
       location.hash = "#/aportar";
     });
     await waitSel("editor abierto", "#editor:not([hidden])");
+    // El arnés no tiene red: se vacía la lista de hosts permitidos ANTES de
+    // pegar el enlace, para que nunca se intente cargar el iframe de Drive.
+    await page.evaluate(async () => {
+      const { SITE } = await import("./js/data/config.js");
+      SITE.documentEmbedHosts.length = 0;
+    });
+    // Medir ANTES de activar oficial: es el caso real con los cinco grupos visibles.
+    const barraRedaccion = await medirBarra();
+    t.assert(
+      barraCabe(barraRedaccion),
+      `barra en Redacción: ≤2 filas y sin desborde a 1440/720/375 px (${JSON.stringify(barraRedaccion.map((r) => [r.ancho, r.filas, r.desborde, r.rects]))})`
+    );
     await page.type('[data-field="title"]', "Informe oficial de prueba");
     await page.type('[data-field="content"]', "## Informe\n\nTexto del documento.");
     const contentBeforeToggle = await page.evaluate(
@@ -47,7 +125,7 @@ export default {
       "el contenido se conserva al escribir"
     );
     await setOfficial(true);
-    await wait("«Documento oficial» presionado", () =>
+    await wait("«Documento oficial» presionado en la barra", () =>
       document.querySelector('[data-kind-btn="oficial"]').getAttribute("aria-pressed") === "true"
     );
     const contentAfterToggle = await page.evaluate(
@@ -58,12 +136,37 @@ export default {
       "activar «oficial» no reescribe el contenido"
     );
     await wait(
-      "campos de oficial visibles",
+      "campos de oficial integrados en la ficha",
       () => !document.querySelector("[data-official-fields]").hidden
     );
     await page.type('[data-field="types"]', "Ensayo");
     await page.type('[data-field="coverCredit"]', "Archivo · dominio público");
-    await page.type('[data-field="documentUrl"]', "https://visor.ejemplo.com/documento");
+    await pegarDrive("https://drive.google.com/file/d/ABC123xyz-_/view?usp=sharing");
+
+    // El workspace oficial quita del flujo el Markdown, la toolbar, los modos
+    // de vista y el campo oculto, pero NO los borra del DOM (exists=true +
+    // display:none). La etiqueta «Documento oficial» sí se ve en el pane.
+    await wait("workspace oficial sin Markdown", () =>
+      ['.editor__input', '.editor__toolbar', '.editor__modes--view', '.editor__outline', '[data-field="documentUrl"]'].every(
+        (sel) => {
+          const el = document.querySelector(sel);
+          const exists = !!el;
+          const display = el ? getComputedStyle(el).display : "";
+          return exists === true && display === "none";
+        }
+      )
+    );
+    await wait("etiqueta visible del modo oficial", () => {
+      const el = document.querySelector("[data-editor-kind-badge]");
+      return !!el && el.textContent.trim() === "Documento oficial" && getComputedStyle(el).display !== "none";
+    });
+
+    // La misma medición con el grupo de vistas oculto (modo oficial).
+    const barraOficial = await medirBarra();
+    t.assert(
+      barraCabe(barraOficial),
+      `barra en oficial: ≤2 filas y sin desborde a 1440/720/375 px (${JSON.stringify(barraOficial.map((r) => [r.ancho, r.filas, r.desborde]))})`
+    );
 
     const form = await page.evaluate(() => ({
       types: document.querySelector('[data-field="types"]').value,
@@ -83,7 +186,8 @@ export default {
       "el contenido sigue en el editor tras completar los campos académicos"
     );
 
-    // 3) Vista previa: aviso + enlace directo, sin iframe fingido; cita visible.
+    // 3) Vista previa: con la lista de hosts vacía se comprueba el gate (aviso
+    // + enlace directo, nunca un iframe). La URL sigue siendo la derivada de Drive.
     await page.click('[data-preview-tab="article"]');
     await waitSel("vista de artículo", "[data-article-stage] .reader__article");
     await wait("aviso de documento", () =>
@@ -106,8 +210,8 @@ export default {
     );
     t.assert(preview.iframes === 0, "sin host permitido NO se crea ningún iframe");
     t.assert(
-      preview.links.some((href) => href.startsWith("https://visor.ejemplo.com/")),
-      "el aviso ofrece el enlace directo al documento"
+      preview.links.some((href) => href.startsWith("https://drive.google.com/file/d/")),
+      "el aviso ofrece el enlace directo al documento derivado de Drive"
     );
     t.assert(preview.credit === "Archivo · dominio público", "la cita se ve bajo la portada");
     t.assert(preview.cardCredit === "Archivo · dominio público", "la tarjeta comparte la cita");
@@ -117,14 +221,22 @@ export default {
       /Borrador guardado/.test(document.querySelector("[data-editor-saved]")?.textContent || "")
     );
     const url = await page.url();
-    await page.goto(`${url.split("#")[0]}?oficial-recarga=1#/aportar`);
+    await page.goto(`${url.split("#")[0]}?oficial-recarga=1`);
+    // Otra vez sin red: se vacía la lista antes de abrir el editor, para que la
+    // vista previa restaurada no intente cargar el iframe de Drive.
+    await page.evaluate(async () => {
+      const { SITE } = await import("./js/data/config.js");
+      SITE.documentEmbedHosts.length = 0;
+    });
+    await page.evaluate(() => {
+      location.hash = "#/aportar";
+    });
     await waitSel("editor tras recargar", "#editor:not([hidden])");
     const restored = await page.evaluate(() => ({
       title: document.querySelector('[data-field="title"]').value,
       content: document.querySelector('[data-field="content"]').value.length,
       types: document.querySelector('[data-field="types"]').value,
       credit: document.querySelector('[data-field="coverCredit"]').value,
-      documentUrl: document.querySelector('[data-field="documentUrl"]').value,
       pressed: document.querySelector('[data-kind-btn="oficial"]').getAttribute("aria-pressed"),
     }));
     t.assert(restored.pressed === "true", "tras recargar sigue elegido «Documento oficial»");
@@ -142,8 +254,8 @@ export default {
     );
     t.assert(restored.credit === "Archivo · dominio público", "se restaura la cita");
     t.assert(
-      restored.documentUrl === "https://visor.ejemplo.com/documento",
-      "se restaura la URL del documento"
+      (await urlGuardada()) === "https://drive.google.com/file/d/ABC123xyz-_/preview",
+      "se restaura la URL derivada en el borrador"
     );
 
     await page.evaluate(() => {
@@ -170,8 +282,8 @@ export default {
     );
     t.assert(/^kind: oficial$/m.test(md), "el .md descargado declara kind: oficial");
     t.assert(
-      /^documentUrl: "https:\/\/visor\.ejemplo\.com\/documento"$/m.test(md),
-      "el .md descargado conserva la URL HTTPS"
+      /^documentUrl: "https:\/\/drive\.google\.com\/file\/d\/ABC123xyz-_\/preview"$/m.test(md),
+      "el .md descargado conserva la URL HTTPS derivada"
     );
     t.assert(/^cover: .*"credit":"Archivo/m.test(md), "el .md descargado conserva cover.credit");
     t.assert(!/^coverCredit:/m.test(md), "no se emite un coverCredit top-level");
@@ -216,47 +328,31 @@ export default {
     );
     t.assert(pulsado.habilitado, "el campo de enlace queda habilitado al pulsar");
 
-    const pegar = (texto) =>
-      page.evaluate((valor) => {
-        const campo = document.querySelector('[data-field="driveLink"]');
-        const evento = new Event("paste", { bubbles: true, cancelable: true });
-        Object.defineProperty(evento, "clipboardData", {
-          value: { getData: () => valor },
-        });
-        campo.dispatchEvent(evento);
-      }, texto);
-    const valorDocumento = () =>
-      page.evaluate(() => ({
-        url: document.querySelector('[data-field="documentUrl"]').value,
-        pendiente: document.querySelector("[data-official-pending]").checked,
-        aviso: document.querySelector("[data-editor-notice]")?.textContent || "",
-      }));
-
-    await pegar("https://drive.google.com/file/d/ABC123xyz-_/view?usp=sharing");
-    const compartido = await valorDocumento();
+    await pegarDrive("https://drive.google.com/file/d/ABC123xyz-_/view?usp=sharing");
+    const compartido = await leerDocumento();
     t.assert(
       compartido.url === "https://drive.google.com/file/d/ABC123xyz-_/preview",
       "un enlace /view?usp=sharing se convierte al visor /preview"
     );
     t.assert(!compartido.pendiente, "pegar un enlace desmarca «documento pendiente»");
 
-    await pegar("https://drive.google.com/file/d/OTROid456/preview?usp=sharing");
-    const directo = await valorDocumento();
+    await pegarDrive("https://drive.google.com/file/d/OTROid456/preview?usp=sharing");
+    const directo = await leerDocumento();
     t.assert(
       directo.url === "https://drive.google.com/file/d/OTROid456/preview",
       "un enlace /preview ya convertido se conserva como URL del visor"
     );
 
-    await pegar("https://docs.google.com/document/d/OTROid456/edit");
-    const ajeno = await valorDocumento();
+    await pegarDrive("https://docs.google.com/document/d/OTROid456/edit");
+    const ajeno = await leerDocumento();
     t.assert(/drive\.google\.com/.test(ajeno.aviso), "rechaza un host ajeno con mensaje en español");
     t.assert(
       ajeno.url === "https://drive.google.com/file/d/OTROid456/preview",
       "el rechazo no sobrescribe la URL anterior"
     );
 
-    await pegar("https://drive.google.com/uc?id=ABC123xyz-_&export=download");
-    const descarga = await valorDocumento();
+    await pegarDrive("https://drive.google.com/uc?id=ABC123xyz-_&export=download");
+    const descarga = await leerDocumento();
     t.assert(/descarga el archivo/.test(descarga.aviso), "rechaza uc?export=download con mensaje en español");
     t.assert(
       descarga.url === "https://drive.google.com/file/d/OTROid456/preview",
@@ -268,10 +364,10 @@ export default {
       casilla.checked = true;
       casilla.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    const pendiente = await valorDocumento();
+    const pendiente = await leerDocumento();
     t.assert(pendiente.url === "", "marcar «pendiente» limpia la URL del documento (XOR)");
-    await pegar("https://drive.google.com/file/d/FINAL789/view");
-    const reconvertido = await valorDocumento();
+    await pegarDrive("https://drive.google.com/file/d/FINAL789/view");
+    const reconvertido = await leerDocumento();
     t.assert(
       reconvertido.url === "https://drive.google.com/file/d/FINAL789/preview" && !reconvertido.pendiente,
       "pegar de nuevo limpia «pendiente» y escribe el visor"
@@ -280,7 +376,7 @@ export default {
       window.open = window.__originalOpen || window.open;
     });
 
-    // 5) Al desmarcar se quita SOLO «Texto oficial».
+    // 5) Al desmarcar se quita SOLO «Texto oficial» y vuelve el modo Edición.
     await page.evaluate(() => {
       URL.createObjectURL = window.__originalCreateObjectURL || URL.createObjectURL;
     });
@@ -295,7 +391,7 @@ export default {
     );
     t.assert(unchecked.hidden, "los campos académicos se ocultan al desmarcar");
 
-    // 6) El diálogo de envío exige confirmar la URL / el .docx adjuntado.
+    // 6) El diálogo de envío exige confirmar el enlace de Drive / el .docx.
     await setOfficial(true);
     const beforeDialog = await page.evaluate(() => ({
       title: document.querySelector('[data-field="title"]').value,
@@ -315,7 +411,7 @@ export default {
       continueDisabled: document.querySelector("[data-proposal-continue]").disabled,
     }));
     t.assert(dialog.stepVisible, "el diálogo muestra el paso del documento oficial");
-    t.assert(dialog.checkVisible, "el diálogo pide confirmar la URL o el .docx adjuntado");
+    t.assert(dialog.checkVisible, "el diálogo pide confirmar el enlace o el .docx adjuntado");
     t.assert(dialog.continueDisabled, "no se puede continuar sin la confirmación");
     await page.click("[data-proposal-check-official]");
     await page.click("[data-proposal-download-md]");

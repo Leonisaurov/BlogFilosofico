@@ -231,6 +231,10 @@ legend { color: var(--accent-deep, #70513a); font-size: 0.9rem; }
 
 .campo-kind .nota { margin: 0; }
 
+/* En «Documento oficial» no se usa Markdown: se quita del flujo, igual que en
+   el editor. El visor sigue siendo un campo oculto derivado del enlace Drive. */
+.formulario[data-kind="oficial"] .campo-contenido { display: none; }
+
 .casillas { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; }
 
 label.casilla,

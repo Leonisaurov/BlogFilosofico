@@ -232,6 +232,7 @@ function activarPestaña(tipo) {
 /** Pinta el switch segmentado del formulario desde el modelo (`kind`). */
 function marcarKind(formulario, valor) {
   const oficial = valor === "oficial";
+  formulario.dataset.kind = oficial ? "oficial" : "normal";
   formulario.querySelectorAll("[data-kind]").forEach((boton) => {
     boton.setAttribute("aria-pressed", String((boton.dataset.kind === "oficial") === oficial));
   });
@@ -353,16 +354,26 @@ function inicializar() {
 
   const enlaceDrive = $("#drive-link");
   const formPublicacion = $("#form-publicacion");
+  marcarKind(formPublicacion, "");
 
   formPublicacion.querySelectorAll("[data-kind]").forEach((boton) => {
     boton.addEventListener("click", () => marcarKind(formPublicacion, boton.dataset.kind));
   });
 
-  /** Convierte el enlace compartido en la URL del visor y limpia «pendiente». */
+  /**
+   * Convierte el enlace compartido en el visor del campo oculto `documentUrl`.
+   * Enlace vacío lo borra; host ajeno conserva la última URL válida y avisa,
+   * sin lanzar hacia el resto del formulario.
+   */
   function convertirEnlaceDrive(valor) {
+    const texto = String(valor ?? "").trim();
+    if (!texto) {
+      formPublicacion.elements.documentUrl.value = "";
+      return true;
+    }
     try {
-      const url = documentUrlFromDriveLink(valor);
-      enlaceDrive.value = String(valor).trim();
+      const url = documentUrlFromDriveLink(texto);
+      enlaceDrive.value = texto;
       formPublicacion.elements.documentUrl.value = url;
       formPublicacion.elements.documentoPendiente.value = "no";
       registrar(`Enlace de Drive convertido: ${url}`);
@@ -385,12 +396,16 @@ function inicializar() {
     convertirEnlaceDrive(texto);
   });
   enlaceDrive.addEventListener("input", () => {
-    if (/drive\.google\.com/i.test(enlaceDrive.value)) convertirEnlaceDrive(enlaceDrive.value);
+    const texto = enlaceDrive.value.trim();
+    if (!texto) convertirEnlaceDrive("");
+    else if (/drive\.google\.com/i.test(texto)) convertirEnlaceDrive(texto);
   });
   formPublicacion.elements.documentoPendiente.addEventListener("change", (evento) => {
     if (evento.target.value === "si") {
       formPublicacion.elements.documentUrl.value = "";
-      enlaceDrive.value = "";
+    } else {
+      const texto = enlaceDrive.value.trim();
+      if (texto) convertirEnlaceDrive(texto);
     }
   });
 

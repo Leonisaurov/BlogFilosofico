@@ -154,32 +154,22 @@
   color: var(--surface);
 }
 
-/* Subclase del selector segmentado para «Redacción / Documento oficial».
-   Ocupa todo el campo ancho y reparte dos opciones sin desbordar en móvil. */
-.editor__modes--kind {
-  display: flex;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.editor__mode--kind {
-  flex: 1 1 8rem;
-  min-width: 0;
-  padding: 8px 10px;
-  text-align: center;
-  font-size: 0.75rem;
-}
-
-.editor__mode--kind:focus-visible {
+.editor__mode:focus-visible {
   outline: 2px solid var(--accent-deep);
   outline-offset: 2px;
 }
 
-.editor__kind-hint {
-  margin: 2px 0 0;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  color: var(--text-dim);
+/* Etiqueta larga por defecto; en móvil se sustituye por un glifo compacto.
+   El nombre accesible de los botones vive en aria-label y no cambia. */
+.editor__label-short {
+  display: none;
+}
+
+/* Subclase del selector segmentado para «Redacción / Documento oficial».
+   Va en la barra, al lado de los modos de vista: grupo compacto, sin crecer. */
+.editor__modes--kind .editor__mode {
+  padding: 6px 10px;
+  white-space: nowrap;
 }
 
 .editor__ghost {
@@ -338,6 +328,52 @@
   display: none;
 }
 
+/* Modo «Documento oficial»: sin Markdown no hay barra de formato, textarea ni
+   modos de vista. Los campos siguen en .editor__meta y la vista previa se apila
+   debajo, para poder seguir editando el documento mientras se comprueba. */
+.editor[data-kind="oficial"] .editor__toolbar,
+.editor[data-kind="oficial"] .editor__input,
+.editor[data-kind="oficial"] .editor__outline,
+.editor[data-kind="oficial"] .editor__modes--view {
+  display: none;
+}
+
+.editor__kind-badge {
+  display: none;
+}
+
+.editor[data-kind="oficial"] .editor__kind-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 3px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--accent-deep);
+}
+
+.editor__workspace[data-kind="oficial"] {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  overflow-y: auto;
+}
+
+.editor__workspace[data-kind="oficial"] .editor__pane--write,
+.editor__workspace[data-kind="oficial"][data-mode="preview"] .editor__pane--write {
+  display: grid;
+  grid-template-rows: auto;
+  overflow: visible;
+}
+
+.editor__workspace[data-kind="oficial"] .editor__pane--preview {
+  border-left: 0;
+  border-top: 1px solid var(--line);
+  min-height: 320px;
+}
+
 .editor__write-head {
   display: flex;
   flex-direction: column;
@@ -432,15 +468,10 @@
 
 .editor__drive p { margin: 0; }
 
+/* Los campos de oficial comparten la cuadrícula de .editor__meta: ni bloque
+   flotante ni burbuja, se integran como los campos de Redacción. */
 .editor__official {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface-sunken);
+  display: contents;
 }
 
 .editor__official[hidden] {
@@ -1045,6 +1076,29 @@
 }
 
 @media (max-width: 520px) {
+  /* La barra conserva el switch y las acciones en dos filas como máximo, sin
+     estirar los grupos segmentados ni recurrir al ancho completo. */
+  .editor__bar-right {
+    gap: 6px;
+  }
+
+  .editor__label-wide {
+    display: none;
+  }
+
+  .editor__label-short {
+    display: inline;
+  }
+
+  .editor__bar-right .editor__ghost,
+  .editor__bar-right .editor__share {
+    padding: 8px 10px;
+  }
+
+  .editor__modes .editor__mode {
+    padding: 6px 8px;
+  }
+
   .share__panel {
     padding: 14px;
     max-height: 92vh;
