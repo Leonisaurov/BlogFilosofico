@@ -18,8 +18,8 @@ export const SITE = {
    */
   url: "https://blog-filosofico.surge.sh/",
 
-  /** Destinatario de las propuestas de artículo (provisional). */
-  adminEmail: "admin@example.com",
+  /** Destinatario de las propuestas de artículo. */
+  adminEmail: "blog.filosofico.comunidad@gmail.com",
 
   /** Prefijo de las claves de almacenamiento local. */
   storagePrefix: "blogfilosofia",

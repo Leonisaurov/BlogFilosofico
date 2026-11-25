@@ -1,7 +1,7 @@
 /**
  * card.js — Tarjeta del feed (cápsula de publicación).
  *
- * Es el MISMO componente que usa la página principal y la previsualización
+ * Es el MISMO componente que usa la portada, la lectura y la previsualización
  * «Tarjeta del feed» del editor. Recibe una publicación del modelo común y
  * compone portada (imagen + respaldo SVG), degradado, categoría, título y
  * descripción.
@@ -22,7 +22,10 @@ const twoDigits = (n) => String(n).padStart(2, "0");
 
 function imageHtml(coverImage, eager) {
   if (!coverImage) return "";
+  // La proporción 16/10 es la que declara .post--grid .post__media en
+  // card.css; CSS impone el tamaño final, pero estos atributos reservan el hueco.
   return `<img class="post__img" src="${escapeHtml(coverImage)}" alt=""
+    width="1600" height="1000"
     loading="${eager ? "eager" : "lazy"}"
     fetchpriority="${eager ? "high" : "low"}"
     decoding="async" referrerpolicy="no-referrer" />`;
@@ -49,9 +52,11 @@ function setFallback(card, article) {
 /**
  * @param {object} article Publicación del modelo común.
  * @param {{index?:number|null, total?:number|null, eager?:boolean, link?:boolean,
- *          variant?: "grid"|null}} options
+ *          variant?: "grid"|"feature"|null}} options
  *   variant: "grid" → tarjeta compacta para cuadrículas editoriales (página
  *   de sección). Mismo marcado y misma portada; solo cambia la disposición.
+ *   variant: "feature" → pieza de apertura de la portada. También reutiliza
+ *   el mismo marcado, el degradado y la portada de respaldo.
  */
 export function createCard(
   article,
@@ -60,6 +65,7 @@ export function createCard(
   const card = document.createElement(link ? "a" : "div");
   card.className = "post";
   if (variant === "grid") card.classList.add("post--grid");
+  if (variant === "feature") card.classList.add("post--feature");
   card.dataset.id = article.id ?? "";
   card.dataset.active = link ? "false" : "true";
   card.dataset.coverImage = article.coverImage ?? "";
@@ -68,7 +74,7 @@ export function createCard(
     card.href = articleHref(article);
     card.setAttribute(
       "aria-label",
-      `${article.title} — ${article.category || "Artículo"}. Abrir artículo.`
+      `${article.title} — ${article.category || "Filosofía"}. Abrir publicación.`
     );
   } else {
     card.dataset.static = "true";
@@ -90,9 +96,9 @@ export function createCard(
         }
       </div>
       <div class="post__foot">
-        <h2 class="post__title">${escapeHtml(article.title || "Título del artículo")}</h2>
+        <h2 class="post__title">${escapeHtml(article.title || "Título de la publicación")}</h2>
         <p class="post__excerpt">${escapeHtml(article.description || "")}</p>
-        <span class="post__cta">Leer artículo ${ARROW}</span>
+        <span class="post__cta">Leer ${ARROW}</span>
       </div>
     </div>
   `;
@@ -112,7 +118,7 @@ export function updateCard(card, article) {
   if (category) category.textContent = article.category || "Artículo";
 
   const title = card.querySelector(".post__title");
-  if (title) title.textContent = article.title || "Título del artículo";
+  if (title) title.textContent = article.title || "Título de la publicación";
 
   const excerpt = card.querySelector(".post__excerpt");
   if (excerpt) excerpt.textContent = article.description || "";

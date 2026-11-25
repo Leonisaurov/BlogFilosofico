@@ -25,7 +25,7 @@ export function createReader(root) {
     }
   });
 
-  function open(article, { backLabel = "Volver al Blog" } = {}) {
+  function open(article, { backLabel = "Volver a la portada" } = {}) {
     const next = getNextArticle(article.id);
 
     root.innerHTML = `
@@ -33,7 +33,7 @@ export function createReader(root) {
         <button class="reader__back" type="button" data-reader-back>
           ${BACK_ARROW}<span>${escapeHtml(backLabel)}</span>
         </button>
-        <span class="reader__bar-label">${article.category ? article.category : "Artículo"}</span>
+        <span class="reader__bar-label">${escapeHtml(article.category || "Artículo")}</span>
       </div>
     `;
     root.append(createArticleView(article, { next }));

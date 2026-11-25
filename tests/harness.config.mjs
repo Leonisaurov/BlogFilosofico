@@ -7,7 +7,7 @@ export default {
   // Command that starts the dev server. Run through `sh -c` in its own process group.
   // Leave `command` empty to manage no server (assume something already serves `url`).
   devServer: {
-    command: "./serve.sh 8138",
+    command: "bash ./serve.sh 8138",
     cwd: "..", // relative to this tests/ directory
     env: {},
     timeoutMs: 60000,

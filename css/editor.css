@@ -167,7 +167,7 @@
 .editor__ghost:hover {
   background: var(--surface);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .editor__share {
@@ -244,7 +244,7 @@
 
 .editor__tool:hover {
   background: var(--surface-2);
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: color-mix(in srgb, var(--accent) 40%, transparent);
 }
 
@@ -374,6 +374,12 @@
   border-color: var(--accent);
 }
 
+.editor__field input:focus-visible,
+.editor__field textarea:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
+}
+
 .editor__cover-row {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -436,6 +442,11 @@
   font-size: clamp(1.3rem, 1.05rem + 1.6vw, 1.9rem);
   line-height: 1.2;
   outline: none;
+}
+
+.editor__title:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
 }
 
 .editor__title::placeholder {
@@ -511,6 +522,11 @@
   font-size: 0.95rem;
   line-height: 1.75;
   tab-size: 2;
+}
+
+.editor__input:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: -2px;
 }
 
 /* ==========================================================================
@@ -756,7 +772,7 @@
 }
 
 /* ==========================================================================
-   Diálogo «Enviar propuesta de artículo»
+   Diálogo «Enviar una aportación»
    ========================================================================== */
 .share__panel {
   max-height: min(88vh, 820px);
@@ -1037,6 +1053,17 @@
 /* ==========================================================================
    Responsive
    ========================================================================== */
+@media (max-width: 720px), (pointer: coarse) {
+  .editor__tool {
+    min-width: 44px;
+    height: 44px;
+  }
+  .share__close {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 @media (max-width: 720px) {
   .editor__workspace[data-mode="split"] {
     grid-template-columns: 1fr;

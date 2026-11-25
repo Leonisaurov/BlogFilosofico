@@ -153,11 +153,20 @@
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
   isolation: isolate;
+}
+
+/* El único <main> ocupa la zona central; dentro de él, la vista activa toma
+   el espacio disponible y el dock conserva su fila inferior. */
+.app__main {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Cuando una vista ocupa toda la pantalla, se oculta la interfaz de abajo:
@@ -165,20 +174,57 @@
    tarjetas del feed se transparenten detrás. */
 .app[data-view="reader"] .site-header,
 .app[data-view="editor"] .site-header,
-.app[data-view="pending"] .site-header,
 .app[data-view="reader"] .feed,
 .app[data-view="editor"] .feed,
-.app[data-view="pending"] .feed,
+.app[data-view="reader"] .home-grid,
+.app[data-view="editor"] .home-grid,
+.app[data-view="reader"] .home,
+.app[data-view="editor"] .home,
+.app[data-view="reader"] .index-view,
+.app[data-view="editor"] .index-view,
+.app[data-view="reader"] .question,
+.app[data-view="editor"] .question,
+.app[data-view="reader"] .info,
+.app[data-view="editor"] .info,
 .app[data-view="reader"] .dock,
-.app[data-view="editor"] .dock,
-.app[data-view="pending"] .dock {
+.app[data-view="editor"] .dock {
   visibility: hidden;
 }
 
-/* En «Secciones» el encabezado y el menú siguen visibles (es una vista interna,
-   no una capa a pantalla completa): la vista ocupa la zona central, la fila que
-   normalmente usa el feed, con su propio scroll. */
+/* Las vistas internas (secciones, portada, índice, pregunta, información)
+   conservan el encabezado y el menú. Ocupan la zona central con su propio
+   scroll; el feed y la cuadrícula solo existen en #/leer. */
+.app[data-view="home"] .feed,
+.app[data-view="home"] .home-grid,
+.app[data-view="home"] .dock,
+.app[data-view="read"] .home,
+.app[data-view="read"] .index-view,
+.app[data-view="read"] .question,
+.app[data-view="read"] .info,
+.app[data-view="index"] .feed,
+.app[data-view="index"] .home-grid,
+.app[data-view="index"] .home,
+.app[data-view="index"] .question,
+.app[data-view="index"] .info,
+.app[data-view="index"] .dock,
+.app[data-view="question"] .feed,
+.app[data-view="question"] .home-grid,
+.app[data-view="question"] .home,
+.app[data-view="question"] .index-view,
+.app[data-view="question"] .info,
+.app[data-view="question"] .dock,
+.app[data-view="information"] .feed,
+.app[data-view="information"] .home-grid,
+.app[data-view="information"] .home,
+.app[data-view="information"] .index-view,
+.app[data-view="information"] .question,
+.app[data-view="information"] .dock,
 .app[data-view="sections"] .feed,
+.app[data-view="sections"] .home-grid,
+.app[data-view="sections"] .home,
+.app[data-view="sections"] .index-view,
+.app[data-view="sections"] .question,
+.app[data-view="sections"] .info,
 .app[data-view="sections"] .dock {
   display: none;
 }
@@ -246,6 +292,71 @@
   text-overflow: ellipsis;
 }
 
+/* --- Navegación editorial visible en escritorio ------------------------ */
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.5vw, 24px);
+  min-width: 0;
+}
+
+.site-nav a {
+  position: relative;
+  padding: 6px 0;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: color 0.2s var(--ease);
+}
+
+.site-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--ink-warm);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s var(--ease);
+}
+
+.site-nav a:hover,
+.site-nav a.is-current {
+  color: var(--text);
+}
+
+.site-nav a.is-current::after,
+.site-nav a:hover::after {
+  transform: scaleX(1);
+}
+
+.site-nav__cta {
+  padding: 8px 14px !important;
+  border: 1px solid var(--ink-warm);
+  border-radius: var(--radius-pill);
+  color: var(--ink-warm) !important;
+  font-weight: 600;
+}
+
+.site-nav__cta::after {
+  display: none;
+}
+
+.site-nav__cta:hover {
+  background: var(--ink-warm);
+  color: var(--paper-note) !important;
+}
+
+@media (max-width: 1040px) {
+  .site-nav {
+    display: none;
+  }
+}
+
 /* Botón de menú: icono café, reconocible sobre el beige. */
 .hamburger {
   display: grid;
@@ -303,6 +414,13 @@
   outline: none;
   scrollbar-width: thin;
   scrollbar-color: var(--accent-soft) transparent;
+}
+
+/* `outline: none` arriba evita el anillo al hacer clic con ratón, pero no debe
+   borrar el foco de teclado (WCAG 2.4.7). */
+.feed:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: -2px;
 }
 
 .feed::-webkit-scrollbar {
@@ -387,6 +505,19 @@
 /* --------------------------------------------------------------------------
    Preferencias de accesibilidad
    -------------------------------------------------------------------------- */
+/* En pantallas táctiles (y móviles estrechos) los controles de la cabecera
+   suben a 44 px sin desbordar la altura de 56 px del encabezado. */
+@media (max-width: 720px), (pointer: coarse) {
+  .brand {
+    min-height: 44px;
+  }
+  .hamburger {
+    width: 44px;
+    height: 44px;
+    padding: 8px 9px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .post,
   .post[data-active="false"] {

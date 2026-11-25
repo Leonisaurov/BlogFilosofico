@@ -1,19 +1,21 @@
 # Blog de Filosofía
 
-Plataforma de lectura para descubrir artículos de filosofía con un
-desplazamiento vertical publicación a publicación. La pantalla principal se
-divide en tres zonas: **encabezado fijo**, **área central con scroll** y **zona
-inferior vacía reservada** para versiones futuras.
+Publicación editorial de filosofía para leer despacio, preguntar y aportar.
+La **portada** no es un feed: presenta una carta de bienvenida, la pregunta de
+la semana, una aportación destacada, los dos ritmos del sitio y un sumario.
+La **lectura continua** vive en `#/leer` y el **índice general** en `#/indice`.
 
 Cada **publicación** tiene dos representaciones que comparten datos,
 componentes y estilos:
 
-1. Una **tarjeta** (cápsula) en el feed de la página principal.
+1. Una **tarjeta** en la lectura continua o en la cuadrícula editorial.
 2. Una **página individual** de lectura con URL propia (`#/articulos/<slug>`).
 
-Incluye un **menú principal** y un **editor de publicaciones en Markdown** con
-portada, descripción breve, doble previsualización (tarjeta y artículo),
-borrador local, exportación y envío por correo.
+Incluye **índice**, **secciones**, **pregunta de la semana**, **información y
+política editorial**, y un **editor de aportaciones en Markdown** con portada,
+descripción breve, doble previsualización (tarjeta y aportación), borrador
+local, exportación y envío por correo. Una aportación no se publica sola: entra
+en un proceso de lectura y edición.
 
 Sin frameworks ni paso de compilación: HTML, CSS y módulos ES nativos. Las dos
 únicas librerías (marked y DOMPurify) están vendorizadas en `vendor/`.
@@ -24,6 +26,9 @@ Sin frameworks ni paso de compilación: HTML, CSS y módulos ES nativos. Las dos
 
 - [Identidad visual](#identidad-visual)
 - [Temas (claro y oscuro)](#temas-claro-y-oscuro)
+- [Portada, lectura e índice](#portada-lectura-e-índice)
+- [Pregunta de la semana](#pregunta-de-la-semana)
+- [Política editorial y periodicidades](#política-editorial-y-periodicidades)
 - [Cómo ejecutar](#cómo-ejecutar)
 - [Estructura](#estructura)
 - [Arquitectura y flujo de datos](#arquitectura-y-flujo-de-datos)
@@ -33,9 +38,9 @@ Sin frameworks ni paso de compilación: HTML, CSS y módulos ES nativos. Las dos
 - [Configuración (drawer lateral)](#configuración-drawer-lateral)
 - [Previsualización al compartir (Open Graph)](#previsualización-al-compartir-open-graph)
 - [Dónde están los datos y cómo añadir una publicación](#dónde-están-los-datos-y-cómo-añadir-una-publicación)
-- [Editor de publicaciones](#editor-de-publicaciones)
+- [Editor de aportaciones](#editor-de-aportaciones)
 - [Borradores locales](#borradores-locales)
-- [Descargar y enviar una propuesta](#descargar-y-enviar-una-propuesta)
+- [Descargar y enviar una aportación](#descargar-y-enviar-una-aportación)
 - [Incorporar una publicación al sitio desplegado](#incorporar-una-publicación-al-sitio-desplegado)
 - [Accesibilidad](#accesibilidad)
 - [Compatibilidad](#compatibilidad)
@@ -125,8 +130,11 @@ la descripción superpuestos sigan siendo legibles.
   `--font-mono`). Son pilas del sistema: no hay fuentes externas que puedan
   fallar ni peticiones de red.
 - **Accesibilidad:** todos los pares texto/fondo verificados superan WCAG AA
-  (≥ 4.5:1); el foco de teclado usa `--accent-deep` y se respeta
-  `prefers-reduced-motion`.
+  (≥ 4.5:1). El acento usado como texto es `--accent-text` (`#8c5746` en claro:
+  4.72:1 sobre `surface-sunken`, hasta 5.50:1 sobre `paper-note`); `--accent`
+  se reserva para iconos y gestos decorativos, donde alcanza 3.77–4.39:1 y
+  basta el umbral de 3:1 de WCAG 1.4.11. El foco de teclado usa
+  `--accent-deep` y se respeta `prefers-reduced-motion`.
 
 ---
 
@@ -159,8 +167,59 @@ tema es el claro.
   transparencia), así que se ven en claro y en oscuro sin rectángulos claros.
 - Las **portadas de los artículos** y las **imágenes de las secciones**
   conservan sus colores propios (son contenido), igual que en el tema claro.
-- El contraste de texto se verificó por píxeles en ambos temas (todo ≥ 4.5:1;
-  peor caso ~4.8:1). Ver [Verificación automática](#verificación-automática).
+- El contraste de texto se verificó por píxeles en ambos temas (todo ≥ 4.5:1).
+  En claro, `--accent-text` da 4.72–5.50:1 sobre fondo, superficies y papel;
+  en oscuro `--accent-text` es `--accent` y también supera el umbral. Los pares
+  de iconos usan `--accent` y se juzgan con el umbral de 3:1 (3.77–4.39:1 en
+  claro). Ver [Verificación automática](#verificación-automática).
+
+---
+
+## Portada, lectura e índice
+
+La arquitectura editorial separa tres gestos que antes estaban mezclados en
+una sola pantalla:
+
+- **Portada (`#/`)**: carta de bienvenida, pregunta de la semana, aportación
+  destacada, los dos relojes del sitio y un sumario breve. No muestra el feed.
+- **Lectura (`#/leer`)**: el feed vertical y la cuadrícula editorial. La
+  preferencia entre ambas se elige en Configuración y se guarda en
+  `localStorage`.
+- **Índice (`#/indice`)**: sumario completo por fecha, con accesos por sección
+  y contadores derivados de `ARTICLES`.
+
+El antiguo home no desaparece: se convierte en una subsección de lectura. Las
+tarjetas del feed y de la cuadrícula siguen saliendo del mismo componente
+(`js/components/card.js`); la portada añade una variante destacada sobre ese
+mismo marcado.
+
+## Pregunta de la semana
+
+`#/pregunta` abre una pregunta nueva cada lunes y conserva un archivo de
+preguntas anteriores. Como el sitio es estático, la respuesta se envía por
+correo: no hay formulario falso ni backend. El texto de la pregunta y su
+archivo viven en `js/data/editorial.js` (`CURRENT_QUESTION`); para cambiar la
+pregunta de la semana, editá ese objeto y desplegá de nuevo. Para archivar una
+pregunta, agregala a `CURRENT_QUESTION.archive`.
+
+## Política editorial y periodicidades
+
+`#/informacion` reúne la carta de bienvenida, la política editorial, los dos
+ritmos del sitio, la licencia y el contacto. La política publica compromisos
+concretos:
+
+- acuse de recibo en 72 horas y decisión en 15 días hábiles;
+- dos lecturas (editorial y especializada) y dos rondas de edición;
+- requisitos de originalidad, fuentes, extensión y declaración de uso de IA;
+- correcciones posteriores visibles y fechadas;
+- una periodicidad quincenal para las aportaciones y semanal para las
+  preguntas.
+
+El contenido completo vive en `js/data/editorial.js`; la vista solo compone.
+Estos compromisos describen la intención editorial humana: el sitio es
+estático, así que no acusa recibo, no responde ni despliega automáticamente.
+Toda aportación pasa por revisión antes de publicarse (ver «Incorporar una
+publicación al sitio desplegado»).
 
 ---
 
@@ -170,8 +229,8 @@ Los módulos ES requieren servirse por HTTP (no abrir `index.html` con
 `file://`). El proyecto trae un servidor mínimo basado en Python:
 
 ```bash
-./serve.sh          # http://localhost:8080
-./serve.sh 8137     # o el puerto que prefieras
+bash serve.sh          # http://localhost:8080
+bash serve.sh 8137     # o el puerto que prefieras
 ```
 
 También sirve cualquier servidor estático:
@@ -188,10 +247,18 @@ Desde el teléfono, abrí `http://<ip-local-de-la-máquina>:8080`.
 
 ```
 BlogFilosofico/
-├── index.html              # Cáscara: encabezado, feed, cuadrícula, secciones,
-│                           #         lector, editor y diálogos
+├── index.html              # Cáscara: encabezado, portada, lectura, índice,
+│                           #         pregunta, información, secciones, lector
+│                           #         y editor
 ├── serve.sh                # Servidor local (python3 -m http.server)
 ├── CNAME                   # Dominio público (blog-filosofico.surge.sh)
+├── envios/                 # Aportaciones recibidas (NO se despliegan)
+│   └── README.md           # Instrucciones de entrada y flujo
+├── scripts/
+│   ├── import-submissions.mjs  # Importador local sin dependencias
+│   ├── .importados.json    # Manifiesto de huellas SHA-256 importadas
+│   ├── generate-feeds.mjs  # RSS y sitemap deterministas
+│   └── check-feeds.mjs     # Comprueba que los feeds siguen a ARTICLES
 ├── assets/
 │   ├── favicon.svg
 │   ├── phi.svg             # Símbolo Φ (detalle del papel tapiz)
@@ -207,24 +274,28 @@ BlogFilosofico/
 │   ├── tokens.css          # Paleta, tipografía, medidas y reset
 │   ├── layout.css          # Zonas fijas y contenedor con scroll snap
 │   ├── card.css            # Composición de la tarjeta (feed y cuadrícula)
-│   ├── home.css            # Vista de cuadrícula de la página principal
+│   ├── home.css            # Cuadrícula de lectura (#/leer)
 │   ├── sections.css        # Explorador temático (cuadrícula + sección)
 │   ├── reader.css          # Página individual de lectura
 │   ├── menu.css            # Menú principal desplegable
 │   ├── settings.css        # Drawer de configuración, confirmación y aviso
 │   ├── editor.css          # Editor y vistas provisionales
+│   ├── editorial.css       # Portada, índice, pregunta e información
 │   ├── markdown.css        # Tipografía del documento renderizado
 │   └── responsive.css      # Ajustes por pantalla (móvil primero)
 ├── js/
 │   ├── main.js             # Punto de entrada: monta y conecta todo
 │   ├── data/
-│   │   ├── articles.js     # ← PUBLICACIONES del sitio
+│   │   ├── articles.js     # ← PUBLICACIONES del sitio (concatena CONTRIBUTIONS)
+│   │   ├── contributions.js# ← GENERADO por el importador (aportaciones revisadas)
 │   │   ├── sections.js     # ← CATÁLOGO de secciones (deriva de articles.js)
+│   │   ├── editorial.js    # ← carta, política, ritmos y pregunta semanal
 │   │   └── config.js       # ← dominio, correo del administrador y ajustes
 │   ├── lib/
 │   │   ├── cover.js        # Portadas SVG de respaldo
 │   │   ├── dom.js          # Utilidades mínimas
 │   │   ├── markdown.js     # marked + DOMPurify (render seguro)
+│   │   ├── format.js       # Fechas compartidas por portada, índice y lector
 │   │   ├── meta.js         # Título y metadatos de previsualización (OG/Twitter)
 │   │   ├── preferences.js  # Preferencias locales (vista y tema)
 │   │   ├── publication.js  # Modelo de publicación, front matter y JSON
@@ -233,16 +304,20 @@ BlogFilosofico/
 │   │   ├── slug.js         # Generación de slugs
 │   │   └── storage.js      # Borrador y limpieza de datos en localStorage
 │   └── components/
-│       ├── header.js       # Encabezado fijo + botón de menú
+│       ├── header.js       # Encabezado fijo, navegación y botón de menú
 │       ├── menu.js         # Menú principal (dialog)
-│       ├── card.js         # Tarjeta del feed (compartida con el editor)
+│       ├── home.js         # Portada editorial
+│       ├── index-view.js   # Índice general
+│       ├── question.js     # Pregunta de la semana y archivo
+│       ├── information.js  # Carta, política y periodicidades
+│       ├── card.js         # Tarjeta compartida (lectura, cuadrícula, editor)
 │       ├── article-view.js # Plantilla de lectura (compartida con el editor)
-│       ├── feed.js         # Área central: snap, rueda, teclado, métricas
-│       ├── home-grid.js    # Cuadrícula de la página principal
+│       ├── feed.js         # Lectura continua: snap, rueda, teclado, métricas
+│       ├── home-grid.js    # Cuadrícula de lectura (#/leer)
 │       ├── reader.js       # Página individual (usa article-view)
 │       ├── sections.js     # Explorador temático (cuadrícula y sección)
 │       ├── settings.js     # Drawer de configuración (dialog lateral)
-│       ├── editor.js       # Editor de publicaciones
+│       ├── editor.js       # Editor de aportaciones
 │       └── pending.js      # Vista provisional genérica (sin uso actual)
 ├── vendor/                 # marked y DOMPurify (versión fija) + licencias
 └── tests/
@@ -254,17 +329,18 @@ BlogFilosofico/
     ├── meta.e2e.mjs        # Metadatos de previsualización (OG/Twitter)
     ├── run                 # Arnés web-page-verification (Chromium + Firefox)
     └── specs/
+        ├── portada.spec.mjs # Portada, índice, pregunta, información y #/leer
         └── tipos.spec.mjs  # Grupo «Por tipo de texto» y agrupamiento
 ```
 
-**Componentes compartidos (sin duplicar):** la tarjeta del feed y la
-previsualización «Tarjeta del feed» usan `js/components/card.js`; la página
-individual y la previsualización «Artículo completo» usan
-`js/components/article-view.js`. Cualquier cambio de estilo en `css/card.css` o
-`css/reader.css` se refleja en el sitio y en el editor. La tarjeta del feed
-admite una variante de cuadrícula (`createCard(article, { variant: "grid" })`)
-que reutiliza el mismo marcado y la misma portada de respaldo para las páginas
-de sección.
+**Componentes compartidos (sin duplicar):** la tarjeta de lectura, la
+cuadrícula, la portada y la previsualización «Tarjeta del feed» usan
+`js/components/card.js`; la página individual y la previsualización
+«Aportación completa» usan `js/components/article-view.js`. Cualquier cambio
+de estilo en `css/card.css` o `css/reader.css` se refleja en el sitio y en el
+editor. La tarjeta admite variantes `grid` y `feature`
+(`createCard(article, { variant: "grid" })`) que reutilizan el mismo marcado y
+la misma portada de respaldo.
 
 ---
 
@@ -277,12 +353,14 @@ DOMPurify) están vendorizadas y se cargan como módulos ES.
 
 ### Capas
 
-1. **Datos** (`js/data/`): `articles.js` (publicaciones publicadas),
-   `sections.js` (catálogo de secciones), `config.js` (nombre, correo, dominio,
+1. **Datos** (`js/data/`): `articles.js` (publica `ARTICLES = [...CONTRIBUTIONS]`),
+   `contributions.js` (generado por el importador desde `envios/`),
+   `sections.js` (catálogo de secciones), `editorial.js` (carta, política,
+   ritmos y pregunta semanal) y `config.js` (nombre, correo, dominio,
    categorías). Es la única fuente de contenido.
 2. **Lógica** (`js/lib/`): utilidades sin estado de UI — router, modelo de
    publicación, portadas SVG, Markdown seguro, preferencias, metadatos,
-   almacenamiento, slugs y la propuesta por correo.
+   fechas, almacenamiento, slugs y el correo de aportaciones.
 3. **Componentes** (`js/components/`): cada vista y sus piezas. `main.js`
    orquesta: crea los componentes, los conecta al router y aplica preferencias.
 4. **Presentación** (`css/`): `tokens.css` define el sistema; el resto de las
@@ -291,25 +369,35 @@ DOMPurify) están vendorizadas y se cargan como módulos ES.
 ### Flujo
 
 ```
-ARTICLES (articles.js) ─┬─> feed.js       ─> card.js (variant feed)
-                        ├─> home-grid.js  ─> card.js (variant grid)
-                        ├─> sections.js   ─> articlesForSection() ─> card.js
-                        └─> reader.js     ─> article-view.js
+CONTRIBUTIONS (contributions.js, generado)
+        └─> ARTICLES (articles.js) ─┬─> home.js      ─> card.js (feature)
+                                    ├─> feed.js      ─> card.js (feed)
+                                    ├─> home-grid.js ─> card.js (grid)
+                                    ├─> index-view.js ─> sumario + enlaces
+                                    ├─> sections.js  ─> articlesForSection() ─> card.js
+                                    └─> reader.js    ─> article-view.js
+EDITORIAL (editorial.js) ─> home.js / question.js / information.js
 router.js  <─>  main.js  ─> muestra/oculta vistas (data-view) y aplica
                             preferencias (data-theme / data-view-mode)
 ```
 
-- **Un solo catálogo**: feed, cuadrícula de inicio, secciones y lector derivan
-  todos de `ARTICLES`. Añadir un artículo en `articles.js` lo hace aparecer en
-  todas las vistas (y en su sección) sin tocar nada más.
-- **Sin duplicar estado**: el feed y la cuadrícula de la home se preparan desde
-  la carga inicial con las mismas tarjetas; la preferencia solo cambia qué
-  contenedor se muestra.
+- **Un solo catálogo**: portada, lectura, índice, secciones y lector derivan
+  todos de `ARTICLES`. Incorporar una aportación con el importador la hace
+  aparecer en todas las vistas (y en su sección) sin tocar nada más.
+- **La portada no es el feed**: `#/` se compone con `editorial.js` y una
+  aportación destacada; `#/leer` conserva el feed y la cuadrícula.
+- **Sin duplicar estado**: el feed y la cuadrícula usan las mismas tarjetas; la
+  cuadrícula se monta en la primera ruta `#/leer` y la preferencia solo cambia
+  qué contenedor se muestra.
+- **Feeds estáticos**: `feed.xml` (RSS 2.0) y `sitemap.xml` se regeneran desde
+  `ARTICLES` con `node scripts/generate-feeds.mjs` tras añadir o editar una
+  publicación; `node scripts/check-feeds.mjs` detecta olvidos. El navegador no
+  genera el feed: hay que desplegar los archivos generados junto al sitio.
 - **Navegación por hash**: el router interpreta `location.hash` y llama al
   handler de la vista; no hay recarga ni peticiones de datos.
 - **Componentes compartidos**: la tarjeta (`card.js`) y la plantilla de lectura
   (`article-view.js`) se usan en el sitio y en el editor, así no se
-desincronizan.
+  desincronizan.
 
 ---
 
@@ -348,17 +436,21 @@ generada por `js/lib/cover.js` (con `cover.palette` o una paleta derivada del
 
 | Ruta | Vista |
 |---|---|
-| `#/` | Feed de publicaciones |
+| `#/` | Portada editorial (carta, pregunta, destacada y sumario) |
+| `#/leer` | Lectura continua: feed vertical o cuadrícula |
+| `#/indice` | Índice general por fecha y accesos por sección |
+| `#/pregunta` | Pregunta de la semana y archivo |
+| `#/informacion` | Carta, política editorial, periodicidades y contacto |
 | `#/articulos/<slug>` | Página individual del artículo |
-| `#/crear` | Editor de publicaciones |
+| `#/aportar` | Editor de aportaciones (`#/crear` sigue como alias) |
 | `#/secciones` | Cuadrícula de secciones filosóficas |
 | `#/secciones/<slug>` | Página de una sección con sus artículos |
-| `#/configuracion` | Drawer de configuración (vista, tema y datos) |
+| `#/configuracion` | Drawer de configuración (lectura, tema y datos) |
 
-El scroll vertical del feed sigue permitiendo descubrir publicaciones; al hacer
-clic o tocar una tarjeta se abre **la página individual de esa publicación**
-(no siempre la misma). Funciona con ratón, pantalla táctil y teclado (la
-tarjeta es un enlace; `Enter` la abre).
+El scroll vertical de `#/leer` sigue permitiendo descubrir publicaciones; al
+hacer clic o tocar una tarjeta se abre **la página individual de esa
+publicación** (no siempre la misma). Funciona con ratón, pantalla táctil y
+teclado (la tarjeta es un enlace; `Enter` la abre).
 
 ---
 
@@ -376,7 +468,8 @@ ocupa la zona central y **conserva el encabezado y el menú**.
 - **Página de sección** (`#/secciones/<slug>`): cabecera con imagen, nombre,
   descripción y cantidad de artículos, seguida de los artículos en una
   **cuadrícula editorial**. Cada tarjeta abre la página individual del
-  artículo. Incluye un enlace para volver a todas las secciones y otro al Blog.
+  artículo. Incluye un enlace para volver a todas las secciones y otro a la
+  portada.
 
 ### Una sola fuente de datos
 
@@ -459,14 +552,14 @@ Tiene tres apartados:
   `localStorage`**; los demás mecanismos se informan como no usados o no
   accesibles en lugar de fingir que se limpiaron. No borra datos de otros
   sitios del mismo dominio ni puede vaciar «todas las cookies» del navegador.
-- Tras borrar: preferencias a los valores por defecto (feed vertical y modo
+- Tras borrar: preferencias a los valores por defecto (lectura continua y modo
   claro), estado en memoria del editor descartado y un aviso discreto confirma
   la limpieza.
 
-### Visualización
+### Lectura
 
-- **Vista de la página principal**: *Feed vertical* (por defecto) o
-  *Cuadrícula*. La preferencia se guarda y se conserva entre visitas.
+- **Vista de `#/leer`**: *Lectura continua* (por defecto) o *Cuadrícula
+  editorial*. La preferencia se guarda y se conserva entre visitas.
 
 ### Apariencia
 
@@ -479,7 +572,7 @@ Tiene tres apartados:
 - Un **script de arranque** en el `<head>` de `index.html` lee esa clave y
   aplica `data-theme` y `data-view-mode` en `<html>` **antes del primer
   pintado**, así no aparece un instante el tema o la vista equivocados. Si no
-  hay preferencia (o falla el almacenamiento), quedan claro y feed.
+  hay preferencia (o falla el almacenamiento), quedan claro y lectura continua.
 - El **feed y la cuadrícula se preparan desde la carga inicial** a partir del
   mismo `ARTICLES` y con las mismas tarjetas (`createCard`); la preferencia
   solo cambia qué contenedor se muestra (`display`), sin reconstruir la
@@ -523,9 +616,14 @@ rutas reales por ruta.
 
 ## Dónde están los datos y cómo añadir una publicación
 
-Las publicaciones del sitio viven en **`js/data/articles.js`**, en el arreglo
-`ARTICLES`. El feed y las páginas individuales se generan a partir de esos
-datos: no hay HTML escrito a mano por publicación.
+Las publicaciones del sitio viven en **`js/data/contributions.js`**, el módulo
+generado que `js/data/articles.js` expone como `ARTICLES` (`[...CONTRIBUTIONS]`).
+Las aportaciones de entrada están en `envios/` y se incorporan con
+`node scripts/import-submissions.mjs --apply`. La portada, la lectura, el índice
+y las páginas individuales se generan a partir de esos datos: no hay HTML escrito
+a mano por publicación.
+Los textos que no son publicaciones (carta, política, ritmos y pregunta) viven
+en **`js/data/editorial.js`**.
 
 ```js
 {
@@ -592,12 +690,16 @@ del propio catálogo (grupo `tipo`) y el editor los usa desde `TEXT_TYPES`.
 
 ---
 
-## Editor de publicaciones
+## Editor de aportaciones
 
-Se abre desde el menú (*Crear artículo*) o con `#/crear`. No crea un documento
-suelto: crea una publicación con **todos** los campos del modelo.
+Se abre desde el menú (*Enviar una aportación*) o con `#/aportar`. No crea un
+artículo publicado: prepara una **aportación** con todos los campos del modelo
+para que el comité editorial la lea y la edite. `#/crear` sigue funcionando como
+alias histórico. El diálogo de envío avisa explícitamente que la aportación será
+revisada, que no se publica ni se despliega automáticamente y que no hay
+respuesta automática: publicar es una decisión editorial posterior.
 
-- **Datos de la publicación:** título, descripción breve, categoría (con
+- **Datos de la aportación:** título, descripción breve, categoría (con
   sugerencias), tipos de texto (con sugerencias, separados por coma), autor y
   portada.
 - **Portada:** se puede escribir una URL (`https://…` o `./assets/…`) o elegir
@@ -610,7 +712,7 @@ suelto: crea una publicación con **todos** los campos del modelo.
 - **Previsualización doble** (pestañas):
   - **Tarjeta del feed:** usa el mismo componente que el feed real, con las
     mismas proporciones, degradados y tipografía.
-  - **Artículo completo:** usa la misma plantilla de lectura que la página
+  - **Aportación completa:** usa la misma plantilla de lectura que la página
     individual, con título, portada, categoría, autor y el Markdown
     renderizado (encabezados, listas, citas, tablas, código).
   - Ambas se actualizan en vivo al cambiar imagen, título, descripción o
@@ -621,6 +723,13 @@ suelto: crea una publicación con **todos** los campos del modelo.
   `script`, `style`, `iframe`, formularios y atributos de evento, y se
   descartan enlaces con esquemas peligrosos (`javascript:`, `vbscript:`,
   `data:`). El código y la sintaxis literal se muestran como texto.
+- **CSP:** `_headers` publica una Content-Security-Policy en Surge. Autoriza el
+  único `<script>` inline (el hash SHA-256 del script de tema), módulos ES del
+  mismo origen, estilos inline necesarios para las portadas, data-URI del grano
+  y blobs de portada. `connect-src 'self' https:` se amplía a HTTPS porque el
+  editor descarga portadas remotas con `fetch()` (`js/components/editor.js`);
+  sin esa directiva esa descarga fallaría. `form-action 'none'` y
+  `frame-ancestors 'none'` cierran el envío de formularios y el embed.
 
 ### Markdown
 
@@ -634,7 +743,7 @@ documentada acá.
 
 - El título, la descripción, la categoría, el autor, la portada y el contenido
   se autoguardan en `localStorage` (clave `blogfilosofia.borrador.v2`).
-- Al volver a `#/crear` el borrador se restaura; «Nueva» pide confirmación
+- Al volver a `#/aportar` el borrador se restaura; «Nueva» pide confirmación
   antes de descartarlo.
 - Si hay cambios sin guardar, el navegador avisa al cerrar o recargar.
 - Una **imagen local** de hasta ~700 KB se guarda dentro del borrador como
@@ -645,23 +754,25 @@ documentada acá.
 
 ---
 
-## Descargar y enviar una propuesta
+## Descargar y enviar una aportación
 
 El editor separa **dos acciones independientes**:
 
-- **Descargar artículo (.md):** botón de la barra superior que genera el
+- **Descargar aportación (.md):** botón de la barra superior que genera el
   Markdown con front matter YAML (`title`, `slug`, `description`, `category`,
   `types`, `author`, `coverImage`, `createdAt`) y el contenido actual. El
   nombre se deriva del título y se normaliza (`¿Qué es la «justicia»?` →
-  `que-es-la-justicia.md`). No abre el correo ni toca el artículo.
-- **Enviar propuesta por correo:** abre primero un **diálogo de requisitos**
+  `que-es-la-justicia.md`). No abre el correo ni publica nada.
+- **Enviar aportación por correo:** abre primero un **diálogo de requisitos**
   dentro de la aplicación; nunca abre el cliente de correo directamente.
 
-### El diálogo de propuesta
+### El diálogo de envío
 
-El diálogo «Enviar propuesta de artículo» explica que **la propuesta no se
-publica sola** y que el artículo **no se envía automáticamente**: los archivos
-deberá adjuntarlos el usuario en su propio cliente de correo. Los pasos son:
+El diálogo «Enviar una aportación» explica que **la aportación no se publica
+sola**, que **será revisada editorialmente** y que **no hay respuesta ni
+despliegue automático**; añade que **no se envía automáticamente**: los
+archivos deberá adjuntarlos el usuario en su propio cliente de correo. Los
+pasos son:
 
 1. **Descargar el `.md`.** Botón «Descargar .md» que ejecuta la descarga real
    sin cerrar el diálogo; al pulsarlo, el paso pasa a «Descarga solicitada».
@@ -683,13 +794,15 @@ navegador no puede saber si el archivo se guardó o se adjuntó.
 
 ### Qué hace «Continuar al correo»
 
-Abre el cliente externo con un `mailto:` a `admin@example.com` (constante
-`SITE.adminEmail` en `js/data/config.js`) cuyo asunto es
-`Propuesta de artículo para Blog de Filosofía` y cuyo cuerpo es un saludo
-mínimo («Hola: Adjunto una propuesta… Gracias.»). **No** incluye el artículo,
-**no** adjunta archivos, **no** da instrucciones a quien recibe y **no** promete
-publicación ni respuesta automática. Tras abrirlo, el usuario adjunta el `.md`
-y la imagen y envía desde su propia aplicación.
+Abre el cliente externo con un `mailto:` a la dirección configurada en
+`SITE.adminEmail` (`js/data/config.js`; actualmente
+`blog.filosofico.comunidad@gmail.com`) cuyo asunto es
+`Aportación para Blog de Filosofía` y cuyo cuerpo es un saludo breve más el
+aviso: la aportación queda sujeta a revisión editorial, no se publica, no se
+despliega y no hay respuesta automática. **No** incluye el texto, **no**
+adjunta archivos, **no** da instrucciones a quien recibe y **no** promete
+confirmación ni publicación. Tras abrirlo, el usuario adjunta el `.md` y la
+imagen y envía desde su propia aplicación.
 
 El diálogo incluye además, en «Otras exportaciones», la descarga `.json` (datos
 listos para `ARTICLES`) y «Copiar Markdown», que se conservan del flujo
@@ -700,85 +813,73 @@ anterior. Una página estática no puede confirmar que el correo se envió.
 ## Incorporar una publicación al sitio desplegado
 
 El editor **no publica**. Nada de lo que se escribe o se descarga aparece en el
-sitio hasta que sus datos y sus recursos se incorporan al proyecto y se vuelve
-a desplegar. Esta sección describe, sin ambigüedad, qué hacer con el archivo
-`.md` y con la imagen de portada que se reciben.
+sitio hasta que el administrador guarda lo recibido en `envios/`, valida el lote
+con el importador local, **revisa editorialmente** el resultado y despliega los
+artefactos. No hay GitHub Actions, endpoints serverless ni publicación desde el
+navegador.
 
 ### Quién hace cada cosa
 
 - **Quien crea el artículo (autor/a):** lo escribe en el editor, revisa las dos
-  previsualizaciones y descarga la portada (si corresponde) y el `.md` (o el
-  `.json`).
-- **Quien recibe la propuesta (administrador/a):** incorpora el `.md` y la
-  imagen al proyecto y despliega.
+  previsualizaciones, descarga el `.md` (y la portada, si corresponde) y lo
+  envía por correo adjuntando los archivos.
+- **Quien recibe la propuesta (administrador/a):** guarda el `.md` y la imagen
+  en `envios/`, ejecuta el importador, revisa el texto y decide si se incorpora;
+  recién entonces despliega.
 
-### Qué hacer con el archivo `.md` que se recibe
+### Canal de entrada: `envios/`
 
-El `.md` **no se guarda como archivo suelto en el sitio ni se copia a ninguna
-carpeta `content/`**: el blog tiene una única fuente de artículos,
-`js/data/articles.js`. El `.md` es el formato de entrega; su contenido se
-transcribe a ese archivo así:
+`envios/` es la carpeta de entrada (ver `envios/README.md`). El `.md` conserva
+el front matter que emite el editor; si hay imagen local, se guarda junto a él con
+el nombre indicado en la línea `# Imagen local pendiente: copiar "…" …`.
+**Nada de `envios/` se publica ni se despliega.** No se crea una carpeta
+`content/`: las publicaciones siguen viviendo en `js/data/articles.js`, que
+concatena al final las aportaciones generadas en `js/data/contributions.js`.
+Es un módulo generado: no edites `js/data/contributions.js` a mano; usá el
+importador.
+El importador acepta claves **opcionales** que `publication.js` no emite:
+`cover: {…}` (JSON de una línea, para conservar `alt`, `credit`, `numeral` y
+`palette` de la portada de respaldo), `id: …`, `tags: […]` (JSON) y
+`readingTime: <entero>`. Sirven para migraciones/importaciones avanzadas; sus
+tipos se validan y, si faltan, se derivan `id` del slug, `tags` vacío y
+`readingTime` con `estimateReadingTime`.
 
-1. Abrí `js/data/articles.js` y ubicá el arreglo `ARTICLES`.
-2. Agregá un objeto nuevo **al final del arreglo** (antes del `];` que lo
-   cierra), respetando las comas que separan los objetos.
-3. Del front matter del `.md` (el bloque entre los dos primeros `---`), copiá
-   cada campo al objeto con el mismo nombre:
-   - `title` → `title: "…"`
-   - `slug` → `slug: "…"` (identificador de la URL `#/articulos/<slug>`)
-   - `description` → `description: "…"`
-   - `category` → `category: "…"` (una sección de época o de problema)
-   - `types` → `types: […]` (lista; puede tener varios, p. ej.
-     `["Ensayo", "Artículo"]`)
-   - `author` → `author: "…"`
-   - `coverImage` → `coverImage: "…"` (ver más abajo)
-   - `createdAt` → `createdAt: "AAAA-MM-DD"`
-4. Calculá `readingTime` (minutos de lectura, entero) y agregalo al objeto. Si
-   usás el `.json` en lugar del `.md`, ese campo ya viene calculado.
-5. Copiá el cuerpo del `.md` (todo lo que sigue al segundo `---`) dentro del
-   campo `content`, entre backticks, porque `articles.js` usa un *template
-   literal*:
+```bash
+# Simulación (no escribe nada): valida y muestra lo que se incorporaría.
+node scripts/import-submissions.mjs
 
-   ```js
-   content: `## Título
+# Aplicación transaccional: contributions.js, portada, manifiesto y feeds.
+node scripts/import-submissions.mjs --apply
+node --check js/data/contributions.js
+node scripts/check-feeds.mjs
 
-   Texto completo en Markdown…`,
-   ```
+# Despliegue manual de artefactos: ni envios/, ni tests/, ni scripts/:
+npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'
+```
 
-   No cambies el Markdown: el sitio lo renderiza tal cual.
-6. Guardá y verificá que el arreglo siga siendo válido:
+`--input <dir>` permite apuntar el importador a otra carpeta (por ejemplo, las
+fixtures de `tests/fixtures/submissions`). El importador valida tamaño del
+Markdown (≤512 KiB), portada (≤2 MiB, JPG/JPEG/PNG/WebP con bytes mágicos, nunca
+SVG), slug único (contra `ARTICLES`, el manifiesto y el lote), título,
+categoría, tipos, fecha ISO y nombre de imagen seguro. Copia la portada a
+`assets/<slug>-cover.<ext>`; si `coverImage` es remota se conserva, y si no hay
+portada se usa la SVG de respaldo de `js/lib/cover.js`. Calcula `readingTime`
+con `estimateReadingTime` y escapa el Markdown para los template literals.
 
-   ```bash
-   node --check js/data/articles.js
-   ```
-
-   Después recargá el sitio y comprobá que el artículo aparece en el feed, en su
-   sección de época o problema **y** en la de su tipo de texto.
-
-El archivo `.md` se llama `<slug>.md` (por ejemplo,
-`el-tiempo-segun-san-agustin.md`). Ese `slug` es el que va en el campo `slug` y
-el que aparece en la URL; no hay que crear una carpeta por artículo.
-
-### Qué hacer con la imagen de portada
-
-1. Guardá el archivo de la imagen en la carpeta **`assets/`** del proyecto (no
-   en subcarpetas nuevas). Formatos recomendados: **JPG, PNG o WebP**.
-2. Renombrala con el patrón **`<slug>.<ext>`**, el mismo `slug` del artículo:
-   por ejemplo `el-tiempo-segun-san-agustin.jpg`. El editor ya exporta el `.md`
-   con esa ruta cuando la imagen se cargó desde un archivo local; si la recibís
-   con otro nombre, renombrala.
-3. En el objeto de `js/data/articles.js`, dejá
-   `coverImage: "./assets/<slug>.<ext>"` apuntando a ese archivo exacto.
-4. Si la propuesta **no trae imagen**, dejá `coverImage: ""` (o el campo
-   afuera): la tarjeta usa la portada SVG de respaldo y no hay que copiar nada.
-5. El data-URL guardado en el borrador **no sirve** para el sitio publicado ni
-   para otros dispositivos: hay que copiar el archivo real a `assets/`.
+El registro de lo ya importado vive en `scripts/.importados.json`: un mismo
+SHA-256 se avisa «ya importada; se omite» y termina con éxito; un slug repetido
+con otro contenido es un error. Si algo falla, el detalle se escribe en
+`envios/ERRORES.txt` (archivo y motivo, en español) y la aplicación se revierte
+desde `scripts/.staging-<pid>/`.
 
 ### Después de incorporar
 
-1. Volvé a desplegar (subir los archivos al hosting estático).
-2. Comprobá que el artículo aparece en el feed, en su sección de época o
-   problema y en la sección de su tipo de texto (o tipos), con su portada.
+1. Recargá el sitio y comprobá que el artículo aparece en la lectura y el
+   índice, en su sección de época o problema **y** en la de su tipo de texto,
+   con su portada.
+2. Volvé a desplegar los artefactos con `npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'`. El feed RSS
+   (`feed.xml`), el `sitemap.xml` y `robots.txt` se suben con el resto: el
+   navegador no genera el feed. Las URLs canónicas usan `#/articulos/<slug>`.
 
 ### Los tres estados de una publicación
 
@@ -786,7 +887,7 @@ el que aparece en la URL; no hay que crear una carpeta por artículo.
 |---|---|---|
 | **Borrador local** | `localStorage` del navegador del autor | No |
 | **Propuesta compartida** | Correo o archivo exportado | Solo el administrador |
-| **Publicación incorporada** | `js/data/articles.js` + `assets/` | Sí, en la web desplegada |
+| **Publicación incorporada** | `js/data/articles.js` + `js/data/contributions.js` + `assets/` | Sí, en la web desplegada |
 
 ### Cambiar el correo del administrador
 
@@ -812,9 +913,11 @@ categorías sugeridas y el autor por defecto).
   confirmación de borrado enfoca «Cancelar» primero, para que la acción
   destructiva no se dispare por accidente.
 - **Contraste**: pares texto/fondo verificados por píxeles en ambos temas
-  (≥ 4.5:1). El texto sobre portadas usa marfil sobre un degradado oscuro.
-- **Áreas táctiles**: controles de ~38–44 px (hamburguesa, cierre, opciones del
-  drawer, botones de confirmación).
+  (≥ 4.5:1 para texto; ≥ 3:1 para iconos). El texto sobre portadas usa marfil
+  sobre un degradado oscuro.
+- **Áreas táctiles**: 44 px en móvil o pantallas táctiles (hamburguesa, marca,
+  cierres de menú/drawer/diálogo y herramientas del editor); el escritorio con
+  puntero conserva las medidas más compactas.
 - **Movimiento**: se respeta `prefers-reduced-motion` (se anulan transiciones y
   scroll suave).
 - **Formularios**: el editor usa etiquetas asociadas, `fieldset`/`legend` en los
@@ -850,8 +953,13 @@ entorno ni proceso de build.
 ### Opción rápida (surge.sh)
 
 ```bash
-npx surge . blog-filosofico.surge.sh
+npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'
 ```
+
+Los tres `--exclude` evitan publicar aportaciones, pruebas y el importador con
+su manifiesto. **Verificá en staging o en el despliegue real qué archivos se
+suben**: el comportamiento de `--exclude` depende de la versión de Surge y de la
+configuración del hosting; no lo des por sentado sin comprobarlo.
 
 El archivo **`CNAME`** (`blog-filosofico.surge.sh`) fija el dominio. También
 sirve cualquier hosting estático (GitHub Pages, Netlify, Vercel, un bucket S3,
@@ -870,16 +978,18 @@ Si cambiás de dominio, actualizá ambos (y el `CNAME`).
 
 ### Actualizar el contenido
 
-Como no hay backend, publicar es **editar y volver a subir**: agregá la
-publicación a `js/data/articles.js` (y los recursos a `assets/`) y desplegá de
-nuevo. El feed, la cuadrícula y las secciones se actualizan solos.
+Como no hay backend, publicar es **importar y volver a subir**: guardá la
+aportación en `envios/`, ejecutá `node scripts/import-submissions.mjs --apply`
+(y verificá con `node scripts/check-feeds.mjs`) y desplegá los artefactos con
+`npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'`.
+El feed, la cuadrícula y las secciones se actualizan solos desde `CONTRIBUTIONS`.
 
 ---
 
 ## Limitaciones de una página estática
 
 - No hay backend: no se envían correos ni se publican artículos desde el sitio.
-- Enviar una propuesta **no** incorpora el artículo al feed; hace falta el paso
+- Enviar una aportación **no** la incorpora al índice; hace falta el paso
   manual.
 - El borrador es local a cada navegador y no se sincroniza entre dispositivos.
 - Publicar automáticamente requeriría un servicio externo (serverless, un CMS o
@@ -891,17 +1001,24 @@ nuevo. El feed, la cuadrícula y las secciones se actualizan solos.
 
 Los tests usan el protocolo DevTools de Chrome, sin dependencias.
 
-- `tests/e2e.mjs`: el encabezado y el dock no se mueven, la página no scrollea,
-  la proporción de tarjeta es ~3/4, no hay desborde horizontal, **cada tarjeta
-  abre su artículo correcto**, artículos distintos abren contenido distinto, la
-  carga directa por URL funciona, el Markdown se renderiza y el respaldo SVG
-  funciona sin red.
-- `tests/editor.e2e.mjs`: menú (tres opciones, cierre con Escape), campos de la
-  publicación, barra de herramientas, **tarjeta de previsualización con el
-  componente real** (mismo radio/estilos que el feed), **artículo con la
-  plantilla real**, actualización en vivo, pestañas y modos, seguridad del
-  Markdown, diálogo de propuesta (requisitos, descargas y `mailto` breve),
-  exportación `.md`/`.json`, borrador tras recargar y vistas provisionales.
+- `tests/specs/portada.spec.mjs`: con el arnés de web-page-verification,
+  comprueba en escritorio y móvil que la portada tiene carta, pregunta,
+  destacada, dos ritmos y sumario; que el feed **no** está en `#/`; que el
+  índice lista todas las publicaciones; que la pregunta abre un `mailto`; que
+  Información publica política y periodicidades; que `#/leer` recupera el feed;
+  y que el alias `#/crear` normaliza a `#/aportar`.
+- `tests/e2e.mjs`: en `#/leer`, el encabezado y el dock no se mueven, la página
+  no scrollea, la proporción de tarjeta es ~3/4, no hay desborde horizontal,
+  **cada tarjeta abre su artículo correcto**, artículos distintos abren
+  contenido distinto, la carga directa por URL funciona, el Markdown se
+  renderiza y el respaldo SVG funciona sin red.
+- `tests/editor.e2e.mjs`: menú (navegación editorial completa, cierre con
+  Escape), campos de la aportación, barra de herramientas, **tarjeta de
+  previsualización con el componente real** (mismo radio/estilos que el feed),
+  **aportación con la plantilla real**, actualización en vivo, pestañas y
+  modos, seguridad del Markdown, diálogo de envío (requisitos, descargas y
+  `mailto` breve), exportación `.md`/`.json`, borrador tras recargar y vuelta a
+  la lectura.
 - `tests/sections.e2e.mjs`: «Secciones» abre la cuadrícula (conservando el
   encabezado), las 21 tarjetas tienen imagen, nombre, descripción y contador,
   la cuadrícula tiene scroll vertical sin desborde horizontal, cada tarjeta
@@ -910,12 +1027,12 @@ Los tests usan el protocolo DevTools de Chrome, sin dependencias.
   carga directa por URL funciona y «Volver» del lector regresa a la misma
   sección.
 - `tests/sections-dynamic.mjs`: inserta y quita temporalmente una publicación en
-  `js/data/articles.js` y comprueba que aparece/desaparece de su sección, que al
+  `js/data/contributions.js` y comprueba que aparece/desaparece de su sección, que al
   cambiarle la categoría se mueve de sección, y que un borrador local **no**
   aparece en el catálogo público. Restaura el archivo original siempre
   (`try/finally`).
 - `tests/specs/tipos.spec.mjs`: con el arnés de web-page-verification
-  (`./tests/run`), comprueba en Chromium y Firefox, en escritorio y móvil, que
+  (`bash tests/run`), comprueba en Chromium y Firefox, en escritorio y móvil, que
   la cuadrícula incluye el grupo *Por tipo de texto*, que sus cinco tarjetas
   muestran una imagen cargada y que cada tipo agrupa los artículos correctos
   (incluido uno con dos tipos).
@@ -923,8 +1040,8 @@ Los tests usan el protocolo DevTools de Chrome, sin dependencias.
   cambia a cuadrícula y comprueba que persiste al recargar y que abre los
   mismos artículos que el feed, cambia a modo oscuro y comprueba que persiste,
   verifica que «Cancelar» no borra nada y que «Borrar datos» elimina las claves
-  locales, restablece las preferencias (feed + claro) y no rompe los artículos
-  ni las secciones.
+  locales, restablece las preferencias (lectura continua + claro) y no rompe
+  los artículos ni las secciones.
 - `tests/meta.e2e.mjs`: comprueba los metadatos de la portada (Open Graph y
   Twitter Card, imagen 1200×630, canónico) y que al navegar se actualizan el
   título, la descripción, la portada de la vista activa y la URL absoluta; que
@@ -932,9 +1049,11 @@ Los tests usan el protocolo DevTools de Chrome, sin dependencias.
   coincide con el archivo `CNAME` (el dominio se toma de esa fuente).
 
 ```bash
-./serve.sh 8137 &
+# En Linux, invocá los scripts con bash: conservan el shebang de Termux.
+bash serve.sh 8137 &
 
-chromium-browser --headless=new --no-sandbox --disable-gpu \
+# En Termux el binario es `chromium-browser`; en Linux suele ser `chromium`.
+chromium --headless=new --no-sandbox --disable-gpu \
   --user-data-dir="$TMPDIR/chrome-blog" --remote-debugging-port=9222 \
   http://127.0.0.1:8137/ &
 
@@ -951,32 +1070,34 @@ node tests/settings.e2e.mjs 9222 config-movil 390 844
 node tests/meta.e2e.mjs 9222
 
 # Arnés de web-page-verification: abre él mismo el servidor y los navegadores
-./tests/run
+bash tests/run
 ```
 
 ### Comprobación manual
 
-1. En el feed, deslizá: cambia la publicación; encabezado y franja inferior no
+1. En la portada (`#/`), comprobá la carta, la pregunta, la destacada y los dos
+   ritmos. El feed ya no está ahí: abrí *Leer* (`#/leer`).
+2. En `#/leer`, deslizá: cambia la publicación; encabezado y franja inferior no
    se mueven. No aparece scroll horizontal.
-2. Tocá una tarjeta: se abre **su** artículo (`#/articulos/<slug>`); «Volver»
-   regresa al feed en la misma posición. Probá dos tarjetas distintas.
-3. Abrí el menú → *Crear artículo*. Completá título, descripción, categoría,
-   autor y portada; escribí Markdown.
-4. En *Vista previa*, alterná **Tarjeta del feed** y **Artículo completo**:
+3. Tocá una tarjeta: se abre **su** artículo (`#/articulos/<slug>`); «Volver»
+   regresa a la lectura en la misma posición. Probá dos tarjetas distintas.
+4. Abrí el menú → *Enviar una aportación*. Completá título, descripción,
+   categoría, autor y portada; escribí Markdown.
+5. En *Vista previa*, alterná **Tarjeta del feed** y **Aportación completa**:
    deben verse como el sitio real y actualizarse al escribir.
-5. Recargá: el borrador sigue ahí. Probá «Descargar artículo (.md)» y, en
-   «Enviar propuesta por correo», completá los requisitos: descargá el `.md`,
+6. Recargá: el borrador sigue ahí. Probá «Descargar aportación (.md)» y, en
+   «Enviar aportación por correo», completá los requisitos: descargá el `.md`,
    descargá la imagen remota (o abrí la alternativa) y marcá las casillas.
-6. Activá modo avión y recargá: las portadas SVG siguen apareciendo.
-7. Abrí el menú → *Secciones*: aparece la cuadrícula. Tocá una tarjeta: se abre
+7. Activá modo avión y recargá: las portadas SVG siguen apareciendo.
+8. Abrí el menú → *Secciones*: aparece la cuadrícula. Tocá una tarjeta: se abre
    su página con sus artículos; tocá un artículo y volvé: regresás a la misma
    sección. Probá una sección vacía (por ejemplo, *Filosofía medieval*).
-8. Abrí el menú → *Configuración*: el drawer entra desde la derecha. Cambiá a
+9. Abrí el menú → *Configuración*: el drawer entra desde la derecha. Cambiá a
    *Cuadrícula* y a *Modo oscuro*; recargá y comprobá que se mantienen. Cerrá
    con el botón, con Escape y pulsando fuera del panel.
-9. Pulsá *Borrar todos los datos* → *Cancelar*: no se borra nada. Repetí y
-   confirmá *Borrar datos*: vuelven el feed vertical y el modo claro, y aparece
-   un aviso discreto. Los artículos y las secciones siguen funcionando.
+10. Pulsá *Borrar todos los datos* → *Cancelar*: no se borra nada. Repetí y
+    confirmá *Borrar datos*: vuelven la lectura continua y el modo claro, y
+    aparece un aviso discreto. Los artículos y las secciones siguen funcionando.
 
 ---
 
@@ -994,12 +1115,12 @@ rutas son con `#` y los rastreadores no envían el fragmento al servidor. Ver
 [Previsualización al compartir](#previsualización-al-compartir-open-graph).
 
 **No abre o se ve roto al abrir `index.html` con doble clic.** Los módulos ES
-requieren `http(s)://`, no `file://`. Serví la carpeta con `./serve.sh` o
+requieren `http(s)://`, no `file://`. Serví la carpeta con `bash serve.sh` o
 `python3 -m http.server`.
 
 **Aparece un instante el tema o la vista equivocados.** El script de arranque
 del `<head>` lee `localStorage` antes del primer pintado; si el almacenamiento
-está bloqueado, cae en claro + feed. Revisá que no haya errores de consola.
+está bloqueado, cae en claro + lectura continua. Revisá que no haya errores de consola.
 
 **«Borrar todos los datos» no borra algo.** Solo limpia claves con el prefijo
 `blogfilosofia` en `localStorage`/`sessionStorage` (y, si existieran, IndexedDB
@@ -1018,13 +1139,13 @@ dentro del panel o usá su botón de cierre.
 
 ## Alcance
 
-Implementado: feed con scroll, página individual por publicación, menú
-principal, **explorador de secciones** (cuadrícula temática y páginas de
-sección derivadas de los datos), **drawer de configuración** (vista feed o
-cuadrícula, tema claro u oscuro y borrado de datos locales), editor de
-publicaciones con portada, doble previsualización, borrador local, exportación
-y envío por correo.
+Implementado: **portada editorial** (carta, pregunta de la semana, destacada,
+dos ritmos y sumario), **lectura continua** con feed y cuadrícula, **índice
+general**, **explorador de secciones**, **información y política editorial**,
+**drawer de configuración** (vista de lectura, tema claro u oscuro y borrado de
+datos locales), y **editor de aportaciones** con portada, doble previsualización,
+borrador local, exportación y envío por correo.
 
-Fuera de alcance: búsqueda, orden por fecha o relevancia, panel de
-administración, backend y publicación automática. La arquitectura ya separa
-datos, componentes y estilos para incorporarlos sin rehacer la interfaz.
+Fuera de alcance: búsqueda, panel de administración, backend, publicación
+automática y un foro de respuestas. La arquitectura ya separa datos,
+componentes y estilos para incorporarlos sin rehacer la interfaz.

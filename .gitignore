@@ -11,3 +11,11 @@ node_modules/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Aportaciones recibidas: entran por correo y no se despliegan.
+envios/*
+!envios/README.md
+!envios/.gitkeep
+
+# Zona transaccional del importador local.
+scripts/.staging-*

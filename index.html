@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f3ebdd" />
-  <meta name="description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta name="description" content="Una publicación para pensar despacio: filosofía sin prisa, una pregunta por semana y aportaciones que se leen, se editan y se responden." />
   <meta name="author" content="Blog de Filosofía" />
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://blog-filosofico.surge.sh/" />
@@ -20,7 +20,7 @@
   <meta property="og:site_name" content="Blog de Filosofía" />
   <meta property="og:locale" content="es_AR" />
   <meta property="og:title" content="Blog de Filosofía" />
-  <meta property="og:description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta property="og:description" content="Una publicación para pensar despacio: filosofía sin prisa, una pregunta por semana y aportaciones que se leen, se editan y se responden." />
   <meta property="og:url" content="https://blog-filosofico.surge.sh/" />
   <meta property="og:image" content="https://blog-filosofico.surge.sh/assets/social-preview.png" />
   <meta property="og:image:type" content="image/png" />
@@ -29,7 +29,7 @@
   <meta property="og:image:alt" content="Blog de Filosofía: el Hombre de Vitruvio dibujado en tinta café sobre papel beige." />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Blog de Filosofía" />
-  <meta name="twitter:description" content="Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más." />
+  <meta name="twitter:description" content="Una publicación para pensar despacio: filosofía sin prisa, una pregunta por semana y aportaciones que se leen, se editan y se responden." />
   <meta name="twitter:image" content="https://blog-filosofico.surge.sh/assets/social-preview.png" />
   <meta name="twitter:image:alt" content="Blog de Filosofía: el Hombre de Vitruvio dibujado en tinta café sobre papel beige." />
 
@@ -74,10 +74,21 @@
   <link rel="stylesheet" href="./css/menu.css" />
   <link rel="stylesheet" href="./css/settings.css" />
   <link rel="stylesheet" href="./css/editor.css" />
+  <link rel="stylesheet" href="./css/editorial.css" />
   <link rel="stylesheet" href="./css/markdown.css" />
   <link rel="stylesheet" href="./css/responsive.css" />
 </head>
 <body>
+  <!-- Salto de teclado al contenido principal (véase js/main.js: evita que el
+       hash cambie y dispare el router). -->
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <!-- Estado de arranque: se ve antes de que JS monte la portada y desaparece
+       en cuanto termina (js/main.js). Fijo para no desplazar el contenido. -->
+  <div class="boot-loader" id="boot-loader" role="status" aria-live="polite">
+    Preparando la lectura…
+  </div>
+
   <!--
     Capas del fondo (de atrás hacia adelante):
       1. Color beige + grano de papel (body, en css/tokens.css)
@@ -95,41 +106,57 @@
   <!--
     Estructura de tres zonas (fijas arriba y abajo, scroll solo en el centro):
       .site-header → encabezado fijo (renderizado por js/components/header.js)
-      .feed        → área central con scroll snap (js/components/feed.js)
-      .dock        → zona inferior, vacía a propósito (reservada para el futuro)
-      .reader      → vista de lectura de un artículo (js/components/reader.js)
+      .home        → portada editorial (carta, pregunta, destacado, ritmos)
+      .feed        → lectura continua con scroll snap (js/components/feed.js)
+      .home-grid   → cuadrícula de lectura (preferencia en Configuración)
+      .index-view  → índice general (js/components/index-view.js)
+      .question    → pregunta de la semana (js/components/question.js)
+      .info        → carta, política editorial y periodicidades
+      .sections    → explorador temático
+      .dock        → zona inferior reservada
+      .reader      → vista de lectura de un artículo
+      .editor      → editor de aportaciones
   -->
-  <div class="app" id="app" data-view="feed">
+  <div class="app" id="app" data-view="home">
     <div id="site-header" class="site-header-slot"></div>
 
-    <main class="feed" id="feed" tabindex="0" aria-label="Publicaciones">
-      <div class="feed__track" id="feed-track"></div>
+    <!-- Único <main> de la página: permanece en todas las vistas. Dentro de él
+         conviven las distintas vistas; solo una es visible a la vez. -->
+    <main class="app__main" id="contenido" tabindex="-1">
+      <!-- Portada editorial: no es un feed. El feed vive en #/leer. -->
+      <section class="home" id="home" aria-label="Portada"></section>
+
+      <section class="feed" id="feed" tabindex="0" aria-label="Lectura continua">
+        <div class="feed__track" id="feed-track"></div>
+      </section>
+
+      <!-- Cuadrícula de lectura: misma fuente de datos y mismas tarjetas que el
+           feed. La preferencia decide cuál se muestra en #/leer. -->
+      <div class="home-grid" id="home-grid" role="region" aria-label="Lectura en cuadrícula"></div>
+
+      <!-- Índice general y pregunta de la semana. -->
+      <section class="index-view" id="index" aria-label="Índice general"></section>
+      <section class="question" id="question" aria-label="Pregunta de la semana"></section>
+      <section class="info" id="information" aria-label="Información"></section>
+
+      <!-- Explorador temático (rutas #/secciones y #/secciones/<slug>):
+           ocupa la zona central conservando el encabezado y el menú. -->
+      <section class="sections" id="sections" hidden aria-label="Secciones"></section>
+
+      <!-- Zona inferior: intencionalmente vacía. No agregar contenido por ahora. -->
+      <div class="dock" id="dock" aria-hidden="true"></div>
+
+      <section class="reader" id="reader" hidden aria-label="Lectura del artículo"></section>
+
+      <!-- Editor Markdown de aportaciones (ruta #/aportar). -->
+      <section class="editor" id="editor" hidden aria-label="Editor de aportaciones"></section>
     </main>
-
-    <!-- Vista de cuadrícula de la página principal (misma fuente de datos y
-         mismas tarjetas que el feed). La preferencia decide cuál se muestra;
-         ambas se preparan desde la carga inicial. -->
-    <div class="home-grid" id="home-grid" role="region" aria-label="Publicaciones en cuadrícula"></div>
-
-    <!-- Explorador temático (rutas #/secciones y #/secciones/<slug>):
-         ocupa la zona central conservando el encabezado y el menú. -->
-    <section class="sections" id="sections" hidden aria-label="Secciones"></section>
-
-    <!-- Zona inferior: intencionalmente vacía. No agregar contenido por ahora. -->
-    <div class="dock" id="dock" aria-hidden="true"></div>
-
-    <section class="reader" id="reader" hidden aria-label="Lectura del artículo"></section>
-
-    <!-- Vistas provisionales y editor Markdown (rutas #/configuracion y
-         #/crear). -->
-    <section class="pending" id="pending" hidden aria-label="Sección pendiente"></section>
-    <section class="editor" id="editor" hidden aria-label="Editor de artículos"></section>
   </div>
 
   <noscript>
     <div class="noscript">
       <h1>Blog de Filosofía</h1>
-      <p>Esta primera versión se genera con JavaScript para poder ampliar las publicaciones desde una única fuente de datos. Activá JavaScript para navegar el catálogo.</p>
+      <p>Esta publicación se genera con JavaScript para poder ampliar los textos desde una única fuente de datos. Activá JavaScript para leer la portada, el índice y las aportaciones.</p>
     </div>
   </noscript>
 

@@ -172,7 +172,7 @@ async function waitForFeed(send) {
   for (let i = 0; i < 40; i++) {
     const { result } = await send("Runtime.evaluate", {
       expression:
-        "document.readyState === 'complete' && document.querySelectorAll('.post').length > 0",
+        "document.readyState === 'complete' && document.querySelectorAll('#feed .post').length > 0 && document.querySelector('#feed').clientHeight > 0",
       returnByValue: true,
     });
     if (result.value === true) return true;
@@ -210,6 +210,9 @@ if (MODE === "offline") {
 
 await send("Page.reload", { ignoreCache: true });
 await new Promise((r) => setTimeout(r, 1200));
+// La portada ya no es el feed: la lectura continua vive en #/leer.
+await send("Runtime.evaluate", { expression: "location.hash = '#/leer'" });
+await new Promise((r) => setTimeout(r, 900));
 
 const out = { label: LABEL, mode: MODE, ready: false };
 out.ready = await waitForFeed(send);

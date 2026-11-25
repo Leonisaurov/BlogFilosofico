@@ -67,11 +67,11 @@ function emptyState() {
     <h2 class="section-empty__title">Todavía no hay artículos en esta sección</h2>
     <p class="section-empty__text">
       Esta temática todavía no tiene publicaciones. Podés explorar otras secciones
-      o volver al Blog mientras preparamos nuevos artículos.
+      o volver a la portada mientras preparamos nuevos artículos.
     </p>
     <span class="section-empty__actions">
       <a class="section-empty__link" href="#/secciones">Ver todas las secciones</a>
-      <a class="section-empty__link section-empty__link--ghost" href="#/">Volver al Blog</a>
+      <a class="section-empty__link section-empty__link--ghost" href="#/">Volver a la portada</a>
     </span>
   `;
   return box;
@@ -86,7 +86,7 @@ export function createSections(root) {
 
     root.innerHTML = `
       <div class="sections__bar">
-        <a class="sections__back" href="#/">${BACK_ARROW}<span>Volver al Blog</span></a>
+        <a class="sections__back" href="#/">${BACK_ARROW}<span>Volver a la portada</span></a>
         <span class="sections__bar-label">Secciones</span>
       </div>
       <div class="sections__scroll" data-scroll>

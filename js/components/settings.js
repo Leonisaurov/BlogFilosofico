@@ -29,13 +29,13 @@ const TRASH_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const VIEW_OPTIONS = [
   {
     value: "feed",
-    title: "Feed vertical",
-    description: "Una publicación por pantalla, con el desplazamiento actual.",
+    title: "Lectura continua",
+    description: "Una publicación por pantalla, con desplazamiento vertical.",
   },
   {
     value: "grid",
-    title: "Cuadrícula",
-    description: "Varias publicaciones a la vez, en una cuadrícula adaptable.",
+    title: "Cuadrícula editorial",
+    description: "Varias publicaciones a la vez, para recorrer el catálogo.",
   },
 ];
 
@@ -91,10 +91,10 @@ export function createSettings(
         </section>
 
         <section class="settings__group" aria-labelledby="settings-group-view">
-          <h3 class="settings__group-title" id="settings-group-view">Visualización</h3>
-          <p class="settings__note">Cómo explorar las publicaciones en la página principal.</p>
+          <h3 class="settings__group-title" id="settings-group-view">Lectura</h3>
+          <p class="settings__note">Cómo recorrer las publicaciones en «Leer».</p>
           <fieldset class="settings__options">
-            <legend class="visually-hidden">Vista de la página principal</legend>
+            <legend class="visually-hidden">Vista de lectura</legend>
             ${optionsHtml("view-mode", VIEW_OPTIONS)}
           </fieldset>
         </section>
@@ -123,8 +123,8 @@ export function createSettings(
         Se eliminarán los datos que este sitio guardó en tu navegador. Puede incluir:
       </p>
       <ul class="confirm__list">
-        <li>Borradores de artículos guardados en este navegador.</li>
-        <li>Preferencias de visualización y apariencia.</li>
+        <li>Borradores de aportaciones guardados en este navegador.</li>
+        <li>Preferencias de lectura y apariencia.</li>
         <li>Otros datos locales de la aplicación.</li>
       </ul>
       <p class="confirm__text">

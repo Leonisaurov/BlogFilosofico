@@ -69,7 +69,7 @@ export function applyTheme(theme) {
   document.documentElement.dataset.theme = THEMES.has(theme) ? theme : DEFAULT_PREFERENCES.theme;
 }
 
-/** Aplica el modo de vista de la página principal (feed o cuadrícula). */
+/** Aplica el modo de lectura (feed o cuadrícula) en #/leer. */
 export function applyViewMode(mode) {
   document.documentElement.dataset.viewMode = VIEW_MODES.has(mode)
     ? mode

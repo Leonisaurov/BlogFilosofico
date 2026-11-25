@@ -72,7 +72,7 @@
 
 .reader__back:hover {
   background: var(--surface);
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: var(--accent);
 }
 

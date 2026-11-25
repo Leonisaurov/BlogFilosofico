@@ -2,12 +2,16 @@
  * router.js — Enrutado por hash, sin dependencias.
  *
  * Rutas:
- *   #/                        → feed de publicaciones
+ *   #/                        → portada editorial
+ *   #/leer                    → lectura continua (feed o cuadrícula)
+ *   #/indice                  → índice general
+ *   #/pregunta                → pregunta de la semana
+ *   #/informacion             → información, carta y política editorial
  *   #/articulos/<slug|id>     → página individual del artículo
- *   #/crear                   → editor de artículos
+ *   #/aportar (alias #/crear) → editor de aportaciones
  *   #/secciones               → cuadrícula de secciones filosóficas
  *   #/secciones/<slug>        → página de una sección con sus artículos
- *   #/configuracion           → vista provisional
+ *   #/configuracion           → drawer de configuración
  *
  * Se eligió hash routing para que el sitio siga siendo estático y funcione
  * servido desde cualquier ruta, sin configuración de servidor.
@@ -20,14 +24,24 @@ const ARTICLE_ROUTE = /^#\/articulos?\/([^/?#]+)\/?$/;
 const SECTION_ROUTE = /^#\/secciones\/([^/?#]+)\/?$/;
 
 const STATIC_ROUTES = {
-  "#/crear": "editor",
+  "#/": "home",
+  "#/leer": "read",
+  "#/indice": "index",
+  "#/pregunta": "question",
+  "#/informacion": "information",
+  "#/aportar": "editor",
+  "#/crear": "editor", // alias histórico: no rompe enlaces ya compartidos
   "#/secciones": "sections",
   "#/configuracion": "settings",
 };
 
 /** Interpreta un hash y devuelve la ruta resuelta. */
 export function parseRoute(hash = window.location.hash) {
-  const clean = (hash ?? "").trim().replace(/\/+$/, "") || "#/";
+  // Quita barras finales, pero conserva la raíz "#/": convertirla en "#"
+  // dejaría muerta la entrada STATIC_ROUTES["#/"].
+  let clean = (hash ?? "").trim();
+  if (clean.startsWith("#/") && clean.length > 2) clean = clean.replace(/\/+$/, "");
+  clean = clean === "#" || clean === "" ? "#/" : clean;
 
   const match = ARTICLE_ROUTE.exec(clean);
   if (match) {
@@ -43,18 +57,25 @@ export function parseRoute(hash = window.location.hash) {
     return { name: "sections" };
   }
 
-  return { name: STATIC_ROUTES[clean] ?? "feed" };
+  // Cualquier ruta desconocida vuelve a la portada, no a una vista interna.
+  return { name: STATIC_ROUTES[clean] ?? "home" };
 }
 
 /**
- * @param {{onFeed:Function, onArticle:Function, onEditor:Function,
- *          onSections:Function, onSection:Function, onSettings:Function}} handlers
+ * @param {{onHome:Function, onRead:Function, onIndex:Function,
+ *          onQuestion:Function, onInformation:Function, onArticle:Function,
+ *          onEditor:Function, onSections:Function, onSection:Function,
+ *          onSettings:Function}} handlers
  */
 export function createRouter(handlers) {
   function resolve() {
     const route = parseRoute();
     const handler = {
-      feed: handlers.onFeed,
+      home: handlers.onHome,
+      read: handlers.onRead,
+      index: handlers.onIndex,
+      question: handlers.onQuestion,
+      information: handlers.onInformation,
       article: handlers.onArticle,
       editor: handlers.onEditor,
       sections: handlers.onSections,
@@ -63,7 +84,7 @@ export function createRouter(handlers) {
     }[route.name];
 
     if (handler) handler(route);
-    else handlers.onFeed?.(route);
+    else handlers.onHome?.(route);
   }
 
   function navigate(hash) {

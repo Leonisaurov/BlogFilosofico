@@ -10,19 +10,53 @@
 import { articleHref } from "../data/articles.js";
 import { coverDataUri } from "../lib/cover.js";
 import { escapeHtml } from "../lib/dom.js";
-import { renderMarkdown } from "../lib/markdown.js";
+import { formatDate } from "../lib/format.js";
+import { withLoading } from "../lib/loading.js";
 import { estimateReadingTime } from "../lib/publication.js";
 
-export function formatDate(iso) {
-  if (!iso) return "";
-  const date = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("es-AR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+let markdownPromise = null;
+const bodyTokens = new WeakMap();
+
+/** marked + DOMPurify se cargan solo cuando se pinta un cuerpo Markdown. */
+function loadRenderMarkdown() {
+  if (!markdownPromise) {
+    markdownPromise = withLoading(
+      () => import("../lib/markdown.js").then((module) => module.renderMarkdown),
+      "Preparando el texto…"
+    );
+    // Un fallo transitorio de red/caché no debe dejar la promesa rechazada
+    // para toda la sesión: se limpia para que la próxima vista reintente.
+    // withLoading oculta el indicador en su propio finally.
+    markdownPromise.catch(() => {
+      markdownPromise = null;
+    });
+  }
+  return markdownPromise;
 }
+
+/**
+ * Pinta el cuerpo en cuanto el módulo de Markdown esté listo. Si el mismo view
+ * se actualiza antes (el usuario escribe), gana la versión más reciente.
+ */
+function scheduleBody(view, article) {
+  const token = (bodyTokens.get(view) || 0) + 1;
+  bodyTokens.set(view, token);
+  loadRenderMarkdown()
+    .then((renderMarkdown) => {
+      if (bodyTokens.get(view) !== token) return;
+      const body = view.querySelector("[data-body]");
+      if (body) body.innerHTML = renderMarkdown(article.content || "");
+    })
+    .catch(() => {
+      // Si falla la carga del módulo, al menos se ve el texto sin sanitizar
+      // como texto (nunca como HTML).
+      if (bodyTokens.get(view) !== token) return;
+      const body = view.querySelector("[data-body]");
+      if (body) body.textContent = article.content || "";
+    });
+}
+
+export { formatDate };
 
 function metaText(article) {
   const parts = [];
@@ -115,7 +149,7 @@ export function updateArticleView(view, article) {
   lede.textContent = article.description || "";
   lede.hidden = !article.description;
 
-  view.querySelector("[data-body]").innerHTML = renderMarkdown(article.content || "");
+  scheduleBody(view, article);
 
   const cover = view.querySelector("[data-cover]");
   const signature = article.coverImage || "";

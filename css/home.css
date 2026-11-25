@@ -1,5 +1,5 @@
 /* ==========================================================================
-   home.css — Vista de cuadrícula de la página principal
+   home.css — Cuadrícula de lectura (#/leer)
    Presentación alternativa al feed vertical, con las mismas tarjetas
    (`.post--grid`) y la misma cuadrícula (`.card-grid`) que la página de
    sección. Las dos vistas se preparan desde el mismo conjunto de artículos y
@@ -40,12 +40,12 @@
     max(var(--feed-pad-x), env(safe-area-inset-left, 0px));
 }
 
-/* --- Conmutación de la vista principal ---------------------------------- */
-/* Por defecto se ve el feed vertical; en modo cuadrícula, la cuadrícula. */
-:root[data-view-mode="grid"] .app[data-view="feed"] .feed {
+/* --- Conmutación de la lectura ----------------------------------------- */
+/* En #/leer se ve el feed vertical; en modo cuadrícula, la cuadrícula. */
+:root[data-view-mode="grid"] .app[data-view="read"] .feed {
   display: none;
 }
 
-:root[data-view-mode="grid"] .app[data-view="feed"] .home-grid {
+:root[data-view-mode="grid"] .app[data-view="read"] .home-grid {
   display: block;
 }

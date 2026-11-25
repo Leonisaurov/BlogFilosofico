@@ -96,7 +96,7 @@ const GRID = `(async () => {
   q('.sections__back').click();
   await sleep(650);
   out.feedHash = location.hash;
-  out.feedVisible = q('#app').dataset.view === 'feed' && getComputedStyle(q('#feed')).display !== 'none';
+  out.feedVisible = q('#app').dataset.view === 'home' && getComputedStyle(q('.home')).display !== 'none';
   out.sectionsHiddenAfter = q('#sections').hidden === true;
 
   // 7) Sección vacía

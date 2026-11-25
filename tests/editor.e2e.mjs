@@ -1,5 +1,5 @@
 /**
- * editor.e2e.mjs — Verificación del menú y del editor de publicaciones.
+ * editor.e2e.mjs — Verificación del menú y del editor de aportaciones.
  *
  * Usa Chrome DevTools Protocol sin dependencias. Comprueba que el editor crea
  * una PUBLICACIÓN (no solo un documento): datos de portada, doble
@@ -146,12 +146,12 @@ out.steps.menuEscape = await evaluate(`(() => {
   return { closed: dialog.open === false, ariaExpanded: button.getAttribute('aria-expanded') };
 })()`);
 
-// 2) Crear artículo desde el menú.
+// 2) Enviar una aportación desde el menú.
 out.steps.openEditor = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   document.querySelector('[data-menu-open]').click();
   await sleep(250);
-  document.querySelector('[data-menu-target="#/crear"]').click();
+  document.querySelector('[data-menu-target="#/aportar"]').click();
   await sleep(500);
   const editor = document.querySelector('#editor');
   const field = (name) => !!editor.querySelector('[data-field="' + name + '"]');
@@ -262,7 +262,7 @@ out.steps.previews = await evaluate(`(async () => {
     slugLabel: editor.querySelector('[data-editor-slug]')?.textContent,
   };
 
-  // Actualización en vivo: título y descripción → tarjeta; contenido → artículo.
+  // Actualización en vivo: título y descripción → tarjeta; contenido → aportación.
   set('title', 'Título actualizado en vivo');
   set('description', 'Descripción actualizada en vivo.');
   await sleep(350);
@@ -309,7 +309,7 @@ out.steps.previews = await evaluate(`(async () => {
   return result;
 })()`);
 
-// 5) Seguridad del Markdown en la previsualización del artículo.
+// 5) Seguridad del Markdown en la previsualización de la aportación.
 out.steps.security = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const editor = document.querySelector('#editor');
@@ -402,7 +402,7 @@ out.steps.proposal = await evaluate(`(async () => {
   result.mdCheckEnabledAfterDownload = q('[data-proposal-check-md]').disabled === false;
   result.continueEnabledLocal = q('[data-proposal-continue]').disabled === false;
 
-  // --- 11) El editor conserva el artículo tras las descargas. ---
+  // --- 11) El editor conserva la aportación tras las descargas. ---
   result.contentIntactAfterDownload = field('content').value === contentBefore;
 
   q('[data-share-close]').click();
@@ -455,17 +455,19 @@ out.steps.proposal = await evaluate(`(async () => {
 
   // --- 8), 9) y 10) mailto breve y correctamente codificado. ---
   const share = await import('/js/lib/share.js');
+  const { SITE } = await import('/js/data/config.js');
   const mail = share.buildProposalMailto();
   const rawBody = decodeURIComponent(mail.href.split('body=')[1] || '');
   result.mailTo = mail.to;
   result.mailSubject = mail.subject;
-  result.mailHrefStartsMailto = mail.href.startsWith('mailto:admin@example.com?subject=');
+  result.mailHrefStartsMailto = mail.href.startsWith('mailto:' + SITE.adminEmail + '?subject=');
   result.mailBodyHasGreeting = rawBody.includes('Hola:');
-  result.mailBodyMentionsProposal = /propuesta de artículo/i.test(rawBody);
-  result.mailBodyIsShort = rawBody.length < 140;
+  result.mailBodyMentionsProposal = /aportación/i.test(rawBody);
+  result.mailBodyIsShort = rawBody.length < 500;
   result.mailBodyHasNoGuide = !/guard|incorpor|artículos\.js|adjuntá|debés|tenés/i.test(rawBody);
   result.mailBodyNoFullArticle = !rawBody.includes('Contenido en **Markdown**.');
-  result.mailDoesNotClaimAttached = /su revisión/i.test(rawBody);
+  result.mailDoesNotClaimAttached = /revisión editorial/i.test(rawBody);
+  result.mailMentorsEditorialTiming = /72 horas/i.test(rawBody) && /15 días hábiles/i.test(rawBody);
   result.mailEncodedNewlines = mail.href.includes('%0A');
   result.mailNoRawSpaces = !mail.href.includes(' ');
 
@@ -599,7 +601,7 @@ out.steps.beforeUnload = await evaluate(`(async () => {
   return { preventedWhenDirty, preventedWhenSaved: saved.defaultPrevented };
 })()`);
 
-// 9) Publicación nueva (con cancelación), vistas provisionales y vuelta al feed.
+// 9) Aportación nueva (con cancelación), navegación real y vuelta a la lectura.
 out.steps.newAndPending = await evaluate(`(async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const editor = document.querySelector('#editor');
@@ -619,17 +621,16 @@ out.steps.newAndPending = await evaluate(`(async () => {
   result.contentCleared = field('content').value === '';
   result.draftRemoved = localStorage.getItem('blogfilosofia.borrador.v2') === null;
 
-  location.hash = '#/secciones'; await sleep(450);
-  const pending = document.querySelector('#pending');
-  result.sectionsOpen = !pending.hidden;
-  result.sectionsTitle = pending.querySelector('.pending__title')?.textContent;
-  location.hash = '#/configuracion'; await sleep(450);
-  result.settingsOpen = !pending.hidden;
-  result.settingsTitle = pending.querySelector('.pending__title')?.textContent;
-  location.hash = '#/'; await sleep(450);
-  result.backToFeed = !document.querySelector('#feed').hidden && document.querySelectorAll('#feed .post').length === 7;
+  location.hash = '#/secciones'; await sleep(650);
+  result.sectionsOpen = document.querySelector('#app').dataset.view === 'sections' && !document.querySelector('#sections').hidden;
+  result.sectionsTitle = document.querySelector('.sections__title')?.textContent;
+  location.hash = '#/configuracion'; await sleep(650);
+  result.settingsOpen = document.querySelector('#settings-dialog').open;
+  result.settingsTitle = document.querySelector('#settings-title')?.textContent;
+  location.hash = '#/leer'; await sleep(650);
+  result.backToRead = document.querySelector('#app').dataset.view === 'read' && getComputedStyle(document.querySelector('#feed')).display !== 'none';
+  result.feedCards = document.querySelectorAll('#feed .post').length;
   result.editorClosed = document.querySelector('#editor').hidden;
-  result.pendingClosed = document.querySelector('#pending').hidden;
   return result;
 })()`);
 

@@ -83,9 +83,17 @@ const evaluate = async (expression) =>
 
 async function reload() {
   await send("Page.reload", { ignoreCache: true });
-  await sleep(1700);
+  await sleep(1300);
+  // La portada ya no es el feed: la lectura continua vive en #/leer.
+  await evaluate("location.hash = '#/leer'");
+  await sleep(500);
   for (let i = 0; i < 25; i++) {
-    if (await evaluate("document.querySelectorAll('#feed .post').length > 0")) break;
+    if (
+      await evaluate(
+        "document.querySelectorAll('#feed .post').length > 0 && document.querySelector('#feed').clientHeight > 0"
+      )
+    )
+      break;
     await sleep(400);
   }
 }

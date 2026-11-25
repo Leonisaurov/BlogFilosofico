@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Blog de Filosofía</title>
+    <link>https://blog-filosofico.surge.sh/</link>
+    <description>Una publicación para pensar despacio: filosofía sin prisa, una pregunta por semana y aportaciones que se leen, se editan y se responden.</description>
+    <language>es</language>
+    <item>
+      <title>Antes de Sócrates: el día en que el mundo dejó de ser un mito</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/antes-de-socrates-el-origen-de-lo-real</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/antes-de-socrates-el-origen-de-lo-real</guid>
+      <pubDate>Wed, 07 Jan 2026 00:00:00 GMT</pubDate>
+      <description>Tales dijo que todo era agua y sus contemporáneos se rieron. Sin embargo, había hecho algo que nadie había hecho antes: buscar el origen de lo real en lo real mismo, no en el capricho de un dios. Los presocráticos no acertaron casi ninguna respuesta, pero inventaron la pregunta.</description>
+      <category>Filosofía antigua</category>
+    </item>
+    <item>
+      <title>El barco de Teseo en tu propio cuerpo</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/el-barco-de-teseo-en-tu-cuerpo</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/el-barco-de-teseo-en-tu-cuerpo</guid>
+      <pubDate>Wed, 04 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Cada célula de tu cuerpo se reemplaza con el tiempo, y tus recuerdos se reescriben cada vez que los evocas. ¿Qué es, entonces, lo que llamas «yo»? El barco de Teseo planteaba la misma trampa con tablones: ¿sigue siendo el mismo barco cuando ya no queda ninguno de los originales?</description>
+      <category>Metafísica</category>
+    </item>
+    <item>
+      <title>El otro como espejo y como abismo</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/el-otro-como-espejo-y-abismo</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/el-otro-como-espejo-y-abismo</guid>
+      <pubDate>Wed, 21 Jan 2026 00:00:00 GMT</pubDate>
+      <description>Sartre escribió que el infierno son los otros; Levinas respondió que el otro es justamente lo que nos saca del infierno de nosotros mismos. Entre esas dos frases se juega toda la vida en común: el otro me limita, me juzga, pero también me constituye. ¿Puedo reconocerme sin que nadie me mire?</description>
+      <category>Fenomenología</category>
+    </item>
+    <item>
+      <title>El sol saldrá mañana (aunque nada lo garantice)</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/el-sol-saldra-manana</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/el-sol-saldra-manana</guid>
+      <pubDate>Wed, 17 Dec 2025 00:00:00 GMT</pubDate>
+      <description>Que el sol haya salido cada día de tu vida no demuestra que saldrá mañana: solo muestra que la costumbre se parece mucho a la certeza. Hume señaló que toda nuestra ciencia se apoya en ese salto sin fundamento. Vivimos de una apuesta que no podemos justificar sin circularidad.</description>
+      <category>Epistemología</category>
+    </item>
+    <item>
+      <title>La caverna y los ecos: por qué confundimos sombras con realidad</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/la-caverna-y-los-ecos</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/la-caverna-y-los-ecos</guid>
+      <pubDate>Wed, 11 Feb 2026 00:00:00 GMT</pubDate>
+      <description>Unos prisioneros encadenados desde la infancia contemplan sombras en un muro y las toman por el mundo entero. Cuando uno escapa y ve el sol, su relato suena a delirio ante los que se quedaron. Platón no escribió una fábula sobre la ignorancia, sino sobre algo más incómodo: por qué preferimos lo conocido a una verdad que nos desordena.</description>
+      <category>Filosofía antigua</category>
+    </item>
+    <item>
+      <title>Si todo está decidido, ¿quién firma tus decisiones?</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/si-todo-esta-decidido</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/si-todo-esta-decidido</guid>
+      <pubDate>Wed, 14 Jan 2026 00:00:00 GMT</pubDate>
+      <description>Un instante antes de que decidas levantar la mano, el cerebro ya había comenzado el movimiento. El experimento de Libet se leyó como una sentencia contra el libre albedrío, aunque admite otra lectura: quizá la libertad no sea iniciar una acción desde la nada, sino poder detenerla y hacerla propia.</description>
+      <category>Metafísica</category>
+    </item>
+    <item>
+      <title>Sócrates y el precio de una vida examinada</title>
+      <link>https://blog-filosofico.surge.sh/#/articulos/socrates-y-la-vida-examinada</link>
+      <guid isPermaLink="true">https://blog-filosofico.surge.sh/#/articulos/socrates-y-la-vida-examinada</guid>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 GMT</pubDate>
+      <description>Sócrates pudo salvar su vida con una disculpa y eligió la cicuta antes que dejar de preguntar. «Una vida sin examen no merece ser vivida», dijo, y convirtió la duda en un deber. Vale la pena preguntarse si esa frase es una condena a la inquietud perpetua o la única forma de habitar lo que uno hace.</description>
+      <category>Ética</category>
+    </item>
+  </channel>
+</rss>

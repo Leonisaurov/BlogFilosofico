@@ -6,7 +6,7 @@
  * autor, portada y contenido Markdown) y la previsualiza con los componentes
  * reales:
  *   - «Tarjeta del feed»  → createCard (mismo componente que el feed).
- *   - «Artículo completo» → createArticleView (misma plantilla que la página).
+ *   - «Aportación completa» → createArticleView (misma plantilla que la página).
  *
  * Incluye barra de herramientas Markdown, modos Edición/Dividido/Vista previa,
  * borrador local, exportación y envío por correo. Sigue siendo una página
@@ -16,7 +16,7 @@
 import { SITE } from "../data/config.js";
 import { TEXT_TYPES } from "../data/sections.js";
 import { escapeHtml } from "../lib/dom.js";
-import { extractHeadings } from "../lib/markdown.js";
+import { extractHeadings } from "../lib/headings.js";
 import { CATEGORY_OPTIONS, createPublication, isPublicationEmpty, normalizeTypes } from "../lib/publication.js";
 import {
   buildProposalMailto,
@@ -78,7 +78,7 @@ const MODES = [
 
 const PREVIEW_TABS = [
   { tab: "card", label: "Tarjeta del feed" },
-  { tab: "article", label: "Artículo completo" },
+  { tab: "article", label: "Aportación completa" },
 ];
 
 /** Huella estable de la publicación (para saber si cambió). */
@@ -111,6 +111,37 @@ function dataUrlExtension(dataUrl) {
   if (type === "jpeg") return "jpg";
   if (type === "svg+xml") return "svg";
   return type.replace(/[^a-z0-9]/g, "") || "png";
+}
+
+/**
+ * Normaliza una referencia de portada antes de interpolarla en `url("…")`.
+ * Solo se aceptan esquemas de imagen; cualquier ruta relativa (con o sin
+ * prefijo `./`) se resuelve contra la base del documento. Comillas, barras
+ * invertidas y caracteres de control quedan neutralizados antes de CSS.
+ */
+function safeCoverSource(reference) {
+  const raw = String(reference ?? "").trim();
+  if (!raw) return "";
+  const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(raw)?.[1]?.toLowerCase();
+  let value = raw;
+  if (!scheme) {
+    try {
+      const resolved = new URL(raw, document.baseURI);
+      if (resolved.protocol !== "http:" && resolved.protocol !== "https:") return "";
+      value = resolved.href;
+    } catch {
+      return "";
+    }
+  } else if (scheme === "http" || scheme === "https" || scheme === "blob") {
+    // Esquemas permitidos tal cual.
+  } else if (scheme === "data" && /^data:image\//i.test(raw)) {
+    // data-URI de imagen generada localmente.
+  } else {
+    return ""; // javascript:, data:text/html, filesystem:, etc.
+  }
+  return value
+    .replace(/[\\"]/g, (char) => `\\${char}`)
+    .replace(/[\u0000-\u001f\u007f]/g, "");
 }
 
 function readAsDataURL(file) {
@@ -147,10 +178,10 @@ export function createEditor(root, { onClose } = {}) {
     <header class="editor__bar">
       <div class="editor__bar-left">
         <button class="editor__back" type="button" data-editor-back>
-          ${BACK_ARROW}<span>Volver al Blog</span>
+          ${BACK_ARROW}<span>Volver a la portada</span>
         </button>
         <div class="editor__states">
-          <span class="editor__state" data-editor-saved>Publicación nueva</span>
+          <span class="editor__state" data-editor-saved>Aportación nueva</span>
           <span class="editor__state editor__state--share" data-editor-share-state></span>
         </div>
       </div>
@@ -165,10 +196,10 @@ export function createEditor(root, { onClose } = {}) {
         </div>
         <button class="editor__ghost" type="button" data-editor-new>Nueva</button>
         <button class="editor__ghost editor__download" type="button" data-editor-download>
-          Descargar artículo (.md)
+          Descargar aportación (.md)
         </button>
         <button class="editor__share" type="button" data-editor-proposal data-editor-share>
-          Enviar propuesta por correo
+          Enviar aportación por correo
         </button>
       </div>
     </header>
@@ -183,7 +214,7 @@ export function createEditor(root, { onClose } = {}) {
       <div class="editor__pane editor__pane--write">
         <div class="editor__write-head">
           <input class="editor__title" type="text" data-field="title"
-                 placeholder="Título de la publicación" aria-label="Título de la publicación"
+                 placeholder="Título de la aportación" aria-label="Título de la aportación"
                  autocomplete="off" spellcheck="false" />
           <p class="editor__slug">URL de la publicación:
             <code data-editor-slug>#/articulos/…</code>
@@ -191,7 +222,7 @@ export function createEditor(root, { onClose } = {}) {
 
           <div class="editor__meta">
             <label class="editor__field editor__field--wide">
-              <span>Descripción breve (se superpone en la tarjeta del feed)</span>
+              <span>Descripción breve (aparece en la tarjeta y el índice)</span>
               <textarea data-field="description" rows="2"
                         placeholder="Dos o tres frases que planteen el problema y inviten a leer."></textarea>
             </label>
@@ -241,14 +272,14 @@ export function createEditor(root, { onClose } = {}) {
           </datalist>
 
           <details class="editor__outline">
-            <summary>Estructura del artículo</summary>
+            <summary>Estructura de la aportación</summary>
             <div class="editor__outline-list" data-editor-outline></div>
           </details>
         </div>
 
         <textarea class="editor__input" data-field="content"
                   aria-label="Contenido completo en Markdown"
-                  placeholder="# Escribí el artículo completo en Markdown&#10;&#10;Empezá con un encabezado y seguí con el texto…"
+                  placeholder="# Escribí la aportación completa en Markdown&#10;&#10;Empezá con un encabezado y seguí con el texto…"
                   spellcheck="true"></textarea>
       </div>
 
@@ -257,15 +288,20 @@ export function createEditor(root, { onClose } = {}) {
           ${PREVIEW_TABS.map(
             (item) => `
             <button type="button" role="tab" class="editor__preview-tab"
+                    id="preview-tab-${item.tab}"
                     data-preview-tab="${item.tab}"
-                    aria-selected="${item.tab === "card"}">${item.label}</button>`
+                    aria-selected="${item.tab === "card"}"
+                    aria-controls="preview-panel-${item.tab}"
+                    tabindex="${item.tab === "card" ? "0" : "-1"}">${item.label}</button>`
           ).join("")}
         </div>
         <div class="editor__preview-body">
-          <div class="editor__preview-panel" data-preview-panel="card">
+          <div class="editor__preview-panel" id="preview-panel-card" role="tabpanel"
+               data-preview-panel="card" aria-labelledby="preview-tab-card">
             <div class="editor__card-stage" data-card-stage></div>
           </div>
-          <div class="editor__preview-panel" data-preview-panel="article" hidden>
+          <div class="editor__preview-panel" id="preview-panel-article" role="tabpanel"
+               data-preview-panel="article" aria-labelledby="preview-tab-article" hidden>
             <div class="editor__article-stage" data-article-stage></div>
           </div>
         </div>
@@ -275,21 +311,27 @@ export function createEditor(root, { onClose } = {}) {
     <dialog class="share" data-share-dialog aria-labelledby="proposal-heading">
       <div class="share__panel">
         <header class="share__head">
-          <h2 class="share__title" id="proposal-heading">Enviar propuesta de artículo</h2>
+          <h2 class="share__title" id="proposal-heading">Enviar una aportación</h2>
           <button class="share__close" type="button" data-share-close aria-label="Cerrar">
             &#215;
           </button>
         </header>
 
         <p class="share__note">
-          Enviar una propuesta no publica el artículo automáticamente. El equipo
-          del Blog de Filosofía deberá revisar los archivos y decidir si
-          incorpora el contenido al sitio. Recibirás una confirmación únicamente
-          si el proyecto dispone de un mecanismo real para ello.
+          Enviar una aportación no la publica automáticamente: su revisión
+          editorial la hace el equipo del Blog de Filosofía antes de decidir
+          si la incorpora al sitio.
+        </p>
+
+        <p class="share__note">
+          Según nuestra política editorial acusamos recibo por correo en hasta
+          72 horas y comunicamos la decisión en hasta 15 días hábiles. Esa
+          respuesta es humana: no hay respuesta automática ni confirmación
+          automática, y no se despliega nada desde este sitio.
         </p>
 
         <p class="share__note share__note--lead">
-          El artículo <strong>no se envía solo</strong>: tenés que adjuntar los
+          La aportación <strong>no se envía sola</strong>: tenés que adjuntar los
           archivos en tu cliente de correo y pulsar <strong>Enviar</strong>.
           Esta página es estática y no puede adjuntarlos por vos.
         </p>
@@ -298,13 +340,13 @@ export function createEditor(root, { onClose } = {}) {
           <li class="proposal__step" data-proposal-step="md">
             <div class="proposal__step-head">
               <span class="proposal__step-num" aria-hidden="true">1</span>
-              <h3 class="proposal__step-title">Descargá el artículo en Markdown (.md)</h3>
+              <h3 class="proposal__step-title">Descargá la aportación en Markdown (.md)</h3>
               <span class="proposal__status" data-proposal-md-status>Pendiente</span>
             </div>
             <p class="proposal__step-text">
-              Descarga el artículo en formato Markdown (.md). Tendrás que adjuntar
+              Descarga la aportación en formato Markdown (.md). Tendrás que adjuntar
               este archivo al correo para que podamos revisar el contenido de tu
-              propuesta.
+              aportación.
             </p>
             <div class="share__actions">
               <button class="share__action" type="button" data-proposal-download-md>
@@ -322,7 +364,7 @@ export function createEditor(root, { onClose } = {}) {
             <p class="proposal__step-text">
               La imagen de portada es remota. Descárgala también y adjúntala al
               correo junto con el archivo Markdown. Esto permite que el equipo
-              reciba la imagen y pueda incorporarla al proyecto si la propuesta
+              reciba la imagen y pueda incorporarla al proyecto si la aportación
               es aceptada.
             </p>
             <div class="share__actions">
@@ -330,7 +372,7 @@ export function createEditor(root, { onClose } = {}) {
                 Descargar imagen
               </button>
               <a class="share__action" data-proposal-open-cover hidden
-                 target="_blank" rel="noopener">
+                 target="_blank" rel="noopener noreferrer">
                 Abrir imagen original para guardarla
               </a>
             </div>
@@ -462,6 +504,7 @@ export function createEditor(root, { onClose } = {}) {
   let saveTimer = 0;
   let previewTimer = 0;
   let historyTimer = 0;
+  let proposalCloseTimer = 0;
   let history = [];
   let historyIndex = 0;
   let cardPreview = null;
@@ -553,7 +596,7 @@ export function createEditor(root, { onClose } = {}) {
   }
 
   function renderCoverThumb() {
-    const src = state.localCoverUrl || state.coverImage;
+    const src = safeCoverSource(state.localCoverUrl || state.coverImage);
     coverThumb.hidden = !src;
     coverThumb.style.backgroundImage = src ? `url("${src}")` : "";
   }
@@ -867,7 +910,10 @@ export function createEditor(root, { onClose } = {}) {
   function setPreviewTab(tab) {
     state.previewTab = tab;
     previewTabs.forEach((button) => {
-      button.setAttribute("aria-selected", String(button.dataset.previewTab === tab));
+      const selected = button.dataset.previewTab === tab;
+      button.setAttribute("aria-selected", String(selected));
+      // Roving tabindex: solo la pestaña activa entra en el orden de Tab.
+      button.tabIndex = selected ? 0 : -1;
     });
     root.querySelectorAll("[data-preview-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.previewPanel !== tab;
@@ -923,7 +969,7 @@ export function createEditor(root, { onClose } = {}) {
     scheduleHistory();
   }
 
-  // --- Descargar artículo / enviar propuesta ----------------------------
+  // --- Descargar aportación / enviar por correo --------------------------
 
   function markShared() {
     state.sharedFingerprint = fingerprint(publicationData());
@@ -935,7 +981,7 @@ export function createEditor(root, { onClose } = {}) {
   function downloadPublicationMarkdown() {
     if (isPublicationEmpty(publicationData())) {
       setNotice(
-        "Escribí al menos un título o algo de contenido antes de descargar el artículo."
+        "Escribí al menos un título o algo de contenido antes de descargar la aportación."
       );
       return null;
     }
@@ -950,7 +996,7 @@ export function createEditor(root, { onClose } = {}) {
     }
     markShared();
     setNotice(
-      `Se solicitó la descarga de ${file.filename}. Adjuntalo al correo si querés presentar la propuesta.`
+      `Se solicitó la descarga de ${file.filename}. Adjuntalo al correo si querés presentar la aportación.`
     );
     return file;
   }
@@ -1013,8 +1059,8 @@ export function createEditor(root, { onClose } = {}) {
     if (!title || !content) {
       setNotice(
         !title
-          ? "Agregá un título antes de preparar la propuesta."
-          : "Escribí el contenido del artículo antes de preparar la propuesta."
+          ? "Agregá un título antes de preparar el envío."
+          : "Escribí el contenido de la aportación antes de preparar el envío."
       );
       (!title ? fieldEls.title : contentEl).focus();
       return;
@@ -1051,6 +1097,10 @@ export function createEditor(root, { onClose } = {}) {
     }
 
     updateProposalContinue();
+    // Si el cierre anterior sigue en su animación, cancelarlo: showModal()
+    // sobre un diálogo aún abierto lanza InvalidStateError.
+    clearTimeout(proposalCloseTimer);
+    if (shareDialog.open) shareDialog.close();
     shareDialog.showModal();
     requestAnimationFrame(() => shareDialog.classList.add("is-open"));
     requestAnimationFrame(() => proposalDownloadMd.focus());
@@ -1058,7 +1108,8 @@ export function createEditor(root, { onClose } = {}) {
 
   function closeProposal() {
     shareDialog.classList.remove("is-open");
-    setTimeout(() => {
+    clearTimeout(proposalCloseTimer);
+    proposalCloseTimer = setTimeout(() => {
       if (shareDialog.open) shareDialog.close();
     }, 180);
   }
@@ -1131,13 +1182,13 @@ export function createEditor(root, { onClose } = {}) {
     }
   }
 
-  // --- Publicación nueva -------------------------------------------------
+  // --- Aportación nueva -------------------------------------------------
 
   function newPublication() {
     if (
       !isPublicationEmpty(publicationData()) &&
       !window.confirm(
-        "¿Descartar el borrador actual y empezar una publicación nueva? El borrador guardado en este navegador se eliminará."
+        "¿Descartar el borrador actual y empezar una aportación nueva? El borrador guardado en este navegador se eliminará."
       )
     ) {
       return;
@@ -1162,7 +1213,7 @@ export function createEditor(root, { onClose } = {}) {
     resetHistory();
     renderAllPreviews();
     updateShareState();
-    setDocState("Publicación nueva");
+    setDocState("Aportación nueva");
     setMode("edit");
     fieldEls.title.focus();
   }
@@ -1190,7 +1241,7 @@ export function createEditor(root, { onClose } = {}) {
         coverHint.textContent = `La imagen local «${state.coverLocalName}» no se conserva al recargar. Volvé a elegirla para la vista previa, copiá el archivo a assets/ con el nombre <slug>.<ext> y escribí ./assets/<slug>.<ext> en el campo de portada.`;
       }
     } else {
-      setDocState(storageAvailable() ? "Publicación nueva" : "Sin guardado local disponible");
+      setDocState(storageAvailable() ? "Aportación nueva" : "Sin guardado local disponible");
     }
     writeForm();
     resetHistory();
@@ -1228,6 +1279,9 @@ export function createEditor(root, { onClose } = {}) {
   function close() {
     if (!isOpen) return;
     persistNow();
+    // La portada local solo vive mientras se edita: no dejemos el blob url
+    // colgando hasta que se recargue la página.
+    releaseLocalCoverUrl();
     window.removeEventListener("beforeunload", onBeforeUnload);
     isOpen = false;
     root.classList.remove("is-open");
@@ -1262,7 +1316,7 @@ export function createEditor(root, { onClose } = {}) {
       resetHistory();
       renderAllPreviews();
       updateShareState();
-      setDocState("Publicación nueva");
+      setDocState("Aportación nueva");
     }
   }
 
@@ -1340,7 +1394,29 @@ export function createEditor(root, { onClose } = {}) {
     }
   });
 
+  // Patrón ARIA Tabs: flechas y Home/End mueven el foco entre pestañas y
+  // activan la selección (el patrón de foco roving usa tabindex 0/-1).
+  root.querySelector(".editor__preview-tabs").addEventListener("keydown", (event) => {
+    const current = event.target.closest("[data-preview-tab]");
+    if (!current) return;
+    const index = previewTabs.indexOf(current);
+    if (index < 0) return;
+    let next = index;
+    if (event.key === "ArrowRight") next = (index + 1) % previewTabs.length;
+    else if (event.key === "ArrowLeft") next = (index - 1 + previewTabs.length) % previewTabs.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = previewTabs.length - 1;
+    else return;
+    event.preventDefault();
+    const target = previewTabs[next];
+    setPreviewTab(target.dataset.previewTab);
+    target.focus();
+  });
+
   root.addEventListener("keydown", (event) => {
+    // Los atajos pertenecen al área Markdown: si el foco está en «Título» u
+    // otro campo, Ctrl+Z debe deshacer ahí, no en el historial del editor.
+    if (document.activeElement !== contentEl) return;
     const mod = event.ctrlKey || event.metaKey;
     if (!mod) return;
     const key = event.key.toLowerCase();

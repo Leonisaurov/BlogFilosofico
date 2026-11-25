@@ -8,6 +8,11 @@
  * Extensión documentada: se usa GFM (GitHub Flavored Markdown) para admitir
  * tablas, listas de tareas y tachado, que no forman parte del Markdown
  * original. Se activa con `gfm: true`.
+ *
+ * marked + DOMPurify se importan de forma dinámica por article-view.js: este
+ * módulo NO entra en el grafo estático de main.js, así que el primer pintado
+ * de la portada no espera a que se evalúen ~130 KB de vendor. El esquema de
+ * encabezados del editor vive en `headings.js` (sin dependencias).
  */
 
 import { marked } from "../../vendor/marked.esm.js";
@@ -52,34 +57,3 @@ export function renderMarkdown(markdown) {
   return DOMPurify.sanitize(html, PURIFY_CONFIG);
 }
 
-/**
- * Extrae los encabezados (# … ####) para el esquema de jerarquía del editor.
- * Ignora el contenido dentro de bloques de código.
- * @param {string} markdown
- * @returns {{level:number, text:string, line:number}[]}
- */
-export function extractHeadings(markdown) {
-  const headings = [];
-  let inFence = false;
-
-  String(markdown ?? "")
-    .split("\n")
-    .forEach((line, index) => {
-      if (/^\s*(```|~~~)/.test(line)) {
-        inFence = !inFence;
-        return;
-      }
-      if (inFence) return;
-
-      const match = /^(#{1,4})\s+(.+?)\s*#*\s*$/.exec(line);
-      if (match) {
-        headings.push({
-          level: match[1].length,
-          text: match[2].replace(/[*_`~]/g, "").trim(),
-          line: index,
-        });
-      }
-    });
-
-  return headings;
-}

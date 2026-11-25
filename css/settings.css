@@ -359,7 +359,7 @@
 }
 
 .confirm__button--danger:hover {
-  background: color-mix(in srgb, var(--danger) 85%, #000);
+  background: var(--danger-strong);
   border-color: var(--danger);
   color: var(--surface);
 }
@@ -395,6 +395,14 @@
 .toast.is-visible {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* En pantallas táctiles el cierre del drawer sube a 44 px de área táctil. */
+@media (max-width: 720px), (pointer: coarse) {
+  .settings__close {
+    width: 44px;
+    height: 44px;
+  }
 }
 
 /* --- Movimiento reducido ------------------------------------------------- */

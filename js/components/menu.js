@@ -6,8 +6,9 @@
  * El diálogo ocupa toda la pantalla (es el fondo oscurecido) y el panel se
  * coloca dentro; así el clic fuera del panel se detecta de forma fiable.
  *
- * Contiene exactamente tres opciones: Secciones, Configuración y Crear
- * artículo. Las dos primeras llevan a una vista provisional.
+ * Contiene la navegación editorial completa: portada, lectura, índice,
+ * secciones, pregunta de la semana, información, envío de aportaciones y
+ * configuración. El menú no crea estado propio: cada opción es una ruta.
  */
 
 const CHEVRON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -19,9 +20,14 @@ const CLOSE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   <path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
 const ITEMS = [
+  { hash: "#/", label: "Portada" },
+  { hash: "#/leer", label: "Leer" },
+  { hash: "#/indice", label: "Índice" },
   { hash: "#/secciones", label: "Secciones" },
+  { hash: "#/pregunta", label: "Pregunta de la semana" },
+  { hash: "#/informacion", label: "Información" },
+  { hash: "#/aportar", label: "Enviar una aportación" },
   { hash: "#/configuracion", label: "Configuración" },
-  { hash: "#/crear", label: "Crear artículo" },
 ];
 
 export function createMenu(root, { onOpenChange } = {}) {

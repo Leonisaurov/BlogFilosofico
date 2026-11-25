@@ -34,7 +34,10 @@
   top: calc(var(--header-h) + env(safe-area-inset-top, 0px) + 8px);
   right: max(var(--feed-pad-x), env(safe-area-inset-right, 0px));
   width: min(360px, calc(100% - 2 * var(--feed-pad-x)));
+  max-height: calc(100vh - var(--header-h) - 24px);
+  max-height: calc(100dvh - var(--header-h) - 24px);
   padding: 14px;
+  overflow-y: auto;
   background-color: var(--surface);
   background-image: var(--grain);
   border: 1px solid var(--line-strong);
@@ -141,5 +144,14 @@
     right: max(12px, env(safe-area-inset-right, 0px));
     width: auto;
     transform-origin: top center;
+  }
+}
+
+/* En pantallas táctiles el botón de cierre llega a 44 px; la cabecera del
+   panel tiene hueco de sobra y el panel no desborda. */
+@media (max-width: 720px), (pointer: coarse) {
+  .menu__close {
+    width: 44px;
+    height: 44px;
   }
 }

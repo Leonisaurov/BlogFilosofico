@@ -20,7 +20,7 @@ import { SITE } from "../data/config.js";
 
 export const DEFAULT_TITLE = SITE.name;
 export const DEFAULT_DESCRIPTION =
-  "Un recorrido por las grandes preguntas del pensamiento: artículos de filosofía antigua, metafísica, ética, epistemología y más.";
+  "Una publicación para pensar despacio: filosofía sin prisa, una pregunta por semana y aportaciones que se leen, se editan y se responden.";
 export const DEFAULT_IMAGE = "./assets/social-preview.png";
 export const DEFAULT_IMAGE_ALT =
   "Blog de Filosofía: el Hombre de Vitruvio dibujado en tinta café sobre papel beige.";
@@ -49,6 +49,11 @@ function upsertMeta(attribute, key, content) {
     document.head.append(element);
   }
   element.setAttribute("content", content);
+}
+
+/** Elimina una etiqueta <meta> por atributo/clave. */
+function removeMeta(attribute, key) {
+  document.head.querySelector(`meta[${attribute}="${key}"]`)?.remove();
 }
 
 /** ¿La imagen es un formato que las redes aceptan como portada? */
@@ -80,6 +85,17 @@ export function applyMeta(view = {}) {
   upsertMeta("property", "og:description", description);
   upsertMeta("property", "og:image", imageUrl);
   upsertMeta("property", "og:image:alt", imageAlt);
+  // Las medidas fijas del HTML corresponden solo a la imagen por defecto: si
+  // la vista usa otra portada, dejarlas sería información falsa para OG.
+  if (image === DEFAULT_IMAGE) {
+    upsertMeta("property", "og:image:type", "image/png");
+    upsertMeta("property", "og:image:width", "1200");
+    upsertMeta("property", "og:image:height", "630");
+  } else {
+    removeMeta("property", "og:image:type");
+    removeMeta("property", "og:image:width");
+    removeMeta("property", "og:image:height");
+  }
   upsertMeta("property", "og:url", url);
 
   upsertMeta("name", "twitter:title", pageTitle);

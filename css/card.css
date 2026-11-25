@@ -173,6 +173,48 @@
 }
 
 /* ==========================================================================
+   Variante destacada (portada editorial)
+   Misma tarjeta, mismo degradado y misma portada de respaldo; cambia la
+   escala y la composición para que funcione como pieza de apertura.
+   ========================================================================== */
+.post--feature {
+  height: clamp(420px, 58vh, 620px);
+  border-radius: 3px;
+  box-shadow: var(--shadow-lift);
+}
+
+.post--feature[data-active="false"],
+.post--feature[data-active="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+.post--feature .post__body {
+  padding: clamp(22px, 4vw, 44px);
+}
+
+.post--feature .post__foot {
+  max-width: 62ch;
+  gap: 12px;
+}
+
+.post--feature .post__title {
+  font-size: clamp(1.9rem, 1.3rem + 3.2vw, 3.4rem);
+  line-height: 1.02;
+}
+
+.post--feature .post__excerpt {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  font-size: clamp(0.94rem, 0.88rem + 0.35vw, 1.08rem);
+}
+
+.post--feature .post__category {
+  padding: 5px 12px;
+  font-size: 0.64rem;
+}
+
+/* ==========================================================================
    Variante de cuadrícula (página de sección)
    Mismo componente y mismo marcado que la tarjeta del feed; solo cambia la
    disposición: imagen arriba y texto sobre superficie crema, en lugar de la
@@ -251,7 +293,7 @@
     transform: translateY(-4px);
   }
   .post--grid:not([data-static="true"]):hover .post__cta {
-    color: var(--accent);
+    color: var(--accent-text);
   }
   .post--grid:not([data-static="true"]):hover .post__cta svg {
     transform: translateX(4px);
@@ -261,7 +303,7 @@
 /* ==========================================================================
    Cuadrícula editorial de tarjetas
    Reutilizada por la página de sección y por la vista de cuadrícula de la
-   página principal: mismas columnas, mismos huecos, mismas tarjetas.
+   lectura continua: mismas columnas, mismos huecos, mismas tarjetas.
    ========================================================================== */
 .card-grid {
   display: grid;

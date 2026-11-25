@@ -7,7 +7,7 @@ paso de compilación.
 | Archivo | Paquete | Versión | Licencia | Origen |
 |---|---|---|---|---|
 | `marked.esm.js` | [marked](https://github.com/markedjs/marked) | 18.1.0 | MIT | `https://cdn.jsdelivr.net/npm/marked@18.1.0/lib/marked.esm.js` |
-| `dompurify.es.mjs` | [DOMPurify](https://github.com/cure53/DOMPurify) | 3.4.16 | MPL-2.0 OR Apache-2.0 | `https://cdn.jsdelivr.net/npm/dompurify@3.4.16/dist/purify.es.mjs` |
+| `dompurify.es.mjs` | [DOMPurify](https://github.com/cure53/DOMPurify) | 3.4.17 | MPL-2.0 OR Apache-2.0 | `https://unpkg.com/dompurify@3.4.17/dist/purify.es.mjs` |
 
 **Por qué estas:**
 

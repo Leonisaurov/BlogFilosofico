@@ -1,7 +1,7 @@
 /**
  * sections-dynamic.mjs — Verifica que las secciones se DERIVAN de los datos.
  *
- * Inserta temporalmente una publicación en `js/data/articles.js`, recarga el
+ * Inserta temporalmente una publicación en `js/data/contributions.js`, recarga el
  * sitio y comprueba que:
  *   - un artículo nuevo con una categoría existente aparece en su sección y
  *     el contador sube;
@@ -20,8 +20,8 @@ import { dirname, join } from "node:path";
 
 const PORT = process.argv[2] ?? "9222";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const ARTICLES_PATH = join(ROOT, "js", "data", "articles.js");
-const ANCHOR = "export const ARTICLES = [\n";
+const ARTICLES_PATH = join(ROOT, "js", "data", "contributions.js");
+const ANCHOR = "export const CONTRIBUTIONS = [\n";
 
 const TEST_ARTICLE = `  {
     id: "prueba-dinamica",
@@ -40,7 +40,7 @@ const TEST_ARTICLE = `  {
 `;
 
 function withArticle(source, category) {
-  if (!source.includes(ANCHOR)) throw new Error("no se encontró el ancla de ARTICLES");
+  if (!source.includes(ANCHOR)) throw new Error("no se encontró el ancla de CONTRIBUTIONS");
   return source.replace(ANCHOR, ANCHOR + TEST_ARTICLE.replace("__CAT__", category));
 }
 
