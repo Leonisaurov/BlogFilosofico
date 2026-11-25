@@ -36,7 +36,14 @@ import {
   toFrontMatter,
 } from "../js/lib/publication.js";
 import { SITE } from "../js/data/config.js";
-import { TEXT_TYPES } from "../js/data/sections.js";
+import { TEXT_TYPES, SECTIONS } from "../js/data/sections.js";
+import { ARTICLES } from "../js/data/articles.js";
+import { validateSubmission } from "../scripts/import-submissions.mjs";
+import {
+  validateQuestion,
+  validateResponse,
+  sha256 as sha256Texto,
+} from "../scripts/import-questions.mjs";
 import {
   validarPublicacion,
   validarPregunta,
@@ -205,6 +212,42 @@ function portadaDesdeDataUrl(valor) {
   return { buffer, ext };
 }
 
+const MD_MAX_BYTES = 512 * 1024;
+const IMAGEN_MAX_BYTES = 2 * 1024 * 1024;
+const NOMBRE_SEGURO_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const AUTOR_SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Nombre de archivo entrante: sin rutas, sin `..`, sin caracteres de control. */
+function validarNombreEntrante(valor) {
+  const nombre = String(valor ?? "");
+  if (!NOMBRE_SEGURO_RE.test(nombre) || nombre.includes("..") || path.isAbsolute(nombre)) {
+    throw new HttpError(400, `nombre de archivo no seguro: "${nombre}"`);
+  }
+  return nombre;
+}
+
+/** Manifiestos de los importadores, para no sobrescribir lo ya importado. */
+function leerManifiesto(root, rel) {
+  const destino = path.join(root, rel);
+  if (!fs.existsSync(destino)) return {};
+  try {
+    const datos = JSON.parse(fs.readFileSync(destino, "utf8"));
+    if (!datos || typeof datos !== "object" || Array.isArray(datos)) throw new Error("no es un objeto");
+    return datos;
+  } catch (error) {
+    throw new HttpError(400, `${rel} no es válido: ${error.message}`);
+  }
+}
+
+/** La portada se nombra por el front matter, nunca por `<slug>-cover.<ext>`. */
+function nombrePortadaDelFrontMatter(parsed) {
+  const local = String(parsed.coverLocalName ?? "").trim();
+  if (local) return path.basename(local);
+  const imagen = String(parsed.coverImage ?? "").trim();
+  if (imagen.startsWith("./assets/")) return path.basename(imagen);
+  return "";
+}
+
 /**
  * Fábrica del servidor. `puerto: 0` lo deja en un puerto efímero para tests.
  */
@@ -213,6 +256,8 @@ export function crearPanel({ root = ROOT, puerto = PUERTO } = {}) {
   fs.mkdirSync(path.join(root, "tools", "borradores"), { recursive: true });
   const mutex = new Mutex();
   let token = null;
+  // Token que una subida dejó sin efecto: permite distinguir 409 de "sin token".
+  let tokenInvalido = "";
   const previews = new Map();
 
   function limpiarPreviews({ todo = false } = {}) {
@@ -272,6 +317,7 @@ export function crearPanel({ root = ROOT, puerto = PUERTO } = {}) {
       const sinCambios = antes === despues;
       if (sinCambios) {
         token = { valor: crypto.randomUUID(), huella: antes, creado: Date.now() };
+        tokenInvalido = "";
       }
       return {
         ok: true,
@@ -288,6 +334,9 @@ export function crearPanel({ root = ROOT, puerto = PUERTO } = {}) {
   async function aplicar(body) {
     if (body.confirmacion !== "APLICAR") {
       throw new HttpError(400, 'la confirmación debe ser exactamente "APLICAR"');
+    }
+    if (tokenInvalido && body.token === tokenInvalido) {
+      throw new HttpError(409, "subieron archivos nuevos desde la simulación; volvé a simular");
     }
     if (!token || body.token !== token.valor) {
       throw new HttpError(400, "falta un token de simulación vigente");
@@ -469,6 +518,7 @@ export function crearPanel({ root = ROOT, puerto = PUERTO } = {}) {
       POST: guardarBorrador,
       DELETE: borrarBorrador,
     },
+    "/api/archivos": { POST: subirArchivos },
     "/api/simular": { POST: simular },
     "/api/aplicar": { POST: aplicar },
     "/api/preview": { POST: crearPreview },
@@ -541,6 +591,182 @@ export function crearPanel({ root = ROOT, puerto = PUERTO } = {}) {
       return { ok: true, archivo, aviso: "Borrador guardado; todavía no está publicado." };
     }
     throw new HttpError(400, `tipo desconocido: "${tipo}" (usa publicacion, pregunta o respuesta)`);
+  }
+
+  /**
+   * Subida de archivos del participante. Misma exclusión mutua que simular,
+   * aplicar y preview; ninguna escritura ocurre antes de validar el lote.
+   */
+  async function subirArchivos(body) {
+    return mutex.run(async () => {
+      // Toda subida (incluso una rechazada) deja sin efecto un token previo.
+      tokenInvalido = token?.valor ?? "";
+      token = null;
+      const tipo = String(body?.tipo ?? "");
+      if (!["publicacion", "pregunta", "respuesta"].includes(tipo)) {
+        throw new HttpError(400, `tipo desconocido: "${tipo}"`);
+      }
+      const entradas = Array.isArray(body?.archivos) ? body.archivos : [];
+      if (!entradas.length) throw new HttpError(400, "no se enviaron archivos");
+
+      const textos = [];
+      const imagenes = [];
+      for (const entrada of entradas) {
+        const nombre = validarNombreEntrante(entrada?.nombre);
+        if (/\.md$/i.test(nombre)) {
+          const contenido = String(entrada.contenido ?? "");
+          const bytes = Buffer.byteLength(contenido, "utf8");
+          if (bytes > MD_MAX_BYTES) throw new HttpError(413, `${nombre}: el Markdown supera 512 KiB`);
+          textos.push({ nombre, contenido, bytes });
+        } else if (/\.(jpe?g|png|webp)$/i.test(nombre)) {
+          const { buffer, ext } = portadaDesdeDataUrl(entrada.dataUrl);
+          if (buffer.length > IMAGEN_MAX_BYTES) {
+            throw new HttpError(413, `${nombre}: la imagen supera 2 MiB`);
+          }
+          const extension = path.extname(nombre).slice(1).toLowerCase();
+          if (ext !== (extension === "jpeg" ? "jpg" : extension)) {
+            throw new HttpError(400, `${nombre}: la extensión no coincide con los bytes de la imagen`);
+          }
+          imagenes.push({ nombre, buffer });
+        } else {
+          throw new HttpError(400, `${nombre}: tipo no admitido (use .md, JPG, PNG o WebP)`);
+        }
+      }
+      if (!textos.length) throw new HttpError(400, "no se envió ningún archivo .md");
+      if (tipo !== "publicacion" && imagenes.length) {
+        throw new HttpError(400, "las portadas solo acompañan a una publicación");
+      }
+
+      // `validateSubmission` busca la portada junto al .md: se valida en un
+      // temporal y solo después se escribe en la carpeta canónica.
+      const staging = crearTemporal("blogfilosofico-archivos-");
+      try {
+        for (const imagen of imagenes) {
+          escribirAtomico(path.join(staging, imagen.nombre), imagen.buffer);
+        }
+        const escrituras = [];
+        const vistos = new Set();
+        for (const item of textos) {
+          const hash = sha256Texto(Buffer.from(item.contenido, "utf8"));
+          if (tipo === "publicacion") {
+            const parsed = parseSubmission(item.contenido, item.nombre);
+            const pub = {
+              title: parsed.title,
+              slug: parsed.slug,
+              description: parsed.description,
+              category: parsed.category,
+              types: parsed.types,
+              author: parsed.author,
+              coverImage: parsed.coverImage,
+              createdAt: parsed.createdAt,
+              kind: parsed.kind,
+              documentUrl: parsed.documentUrl,
+              documentoPendiente: /^(si|sí)$/i.test(parsed.documentoPendiente) ? "si" : "",
+              cover: parsed.cover ?? {},
+            };
+            const previos = validarPublicacion(pub).errores;
+            if (previos.length) throw new HttpError(400, `${item.nombre}: ${previos.join("; ")}`);
+            const manifest = leerManifiesto(root, "scripts/.importados.json");
+            if (manifest[parsed.slug]?.sha256 === hash) {
+              throw new HttpError(400, `${item.nombre}: ya importada; se omite`);
+            }
+            const errores = validateSubmission(parsed, {
+              root,
+              inputDir: staging,
+              articles: ARTICLES,
+              manifest,
+              site: SITE,
+              sections: SECTIONS,
+              batchSlugs: vistos,
+              batchHashes: new Map(),
+              sha256: hash,
+              mdBytes: item.bytes,
+            });
+            if (errores.length) throw new HttpError(400, errores.join("; "));
+
+            const nombreCover = nombrePortadaDelFrontMatter(parsed);
+            let portada = null;
+            if (nombreCover) {
+              validarNombreEntrante(nombreCover);
+              const imagen = imagenes.find((entrada) => entrada.nombre === nombreCover);
+              if (!imagen) {
+                throw new HttpError(400, `${item.nombre}: falta la imagen "${nombreCover}" declarada en el front matter`);
+              }
+              const destinoCover = rutaDentro(root, `envios/${nombreCover}`, ["envios"]);
+              if (fs.existsSync(destinoCover)) {
+                throw new HttpError(400, `ya existe la portada "envios/${nombreCover}"`);
+              }
+              portada = { destino: destinoCover, buffer: imagen.buffer, rel: `envios/${nombreCover}` };
+            }
+            const rel = `envios/${parsed.slug}.md`;
+            const destino = rutaDentro(root, rel, ["envios"]);
+            if (fs.existsSync(destino)) throw new HttpError(400, `ya existe el borrador "${rel}"`);
+            vistos.add(parsed.slug);
+            escrituras.push({ rel, destino, contenido: item.contenido, portada });
+          } else if (tipo === "pregunta") {
+            const parsed = parseQuestion(item.contenido, item.nombre);
+            const previos = validarPregunta(parsed);
+            if (previos.length) throw new HttpError(400, `${item.nombre}: ${previos.join("; ")}`);
+            const clave = `${parsed.week}-${parsed.slug}`;
+            const manifest = leerManifiesto(root, "scripts/.preguntas-importadas.json");
+            if (manifest[`pregunta:${clave}`]?.sha256 === hash) {
+              throw new HttpError(400, `${item.nombre}: ya importada; se omite`);
+            }
+            const errores = validateQuestion(parsed, { mdBytes: item.bytes });
+            if (errores.length) throw new HttpError(400, errores.join("; "));
+            const subdir = parsed.estado === "abierta" ? "abiertas" : "cerradas";
+            const rel = `preguntas/${subdir}/${clave}.md`;
+            const destino = rutaDentro(root, rel, ["preguntas"]);
+            if (fs.existsSync(destino)) throw new HttpError(400, `ya existe el borrador "${rel}"`);
+            escrituras.push({ rel, destino, contenido: item.contenido });
+          } else {
+            // El autor-slug se deriva del NOMBRE DEL ARCHIVO, no del front matter.
+            const autorSlugArchivo = path.basename(item.nombre, path.extname(item.nombre));
+            if (!AUTOR_SLUG_RE.test(autorSlugArchivo)) {
+              throw new HttpError(400, `nombre de respuesta no seguro: "${item.nombre}" (use autor-slug en minúsculas)`);
+            }
+            let parsed = parseResponse(item.contenido, item.nombre, "");
+            const clave = `${parsed.week}-${parsed.slug}`;
+            parsed = parseResponse(item.contenido, item.nombre, clave);
+            const previos = validarRespuesta(parsed);
+            if (previos.length) throw new HttpError(400, `${item.nombre}: ${previos.join("; ")}`);
+            const manifest = leerManifiesto(root, "scripts/.preguntas-importadas.json");
+            if (manifest[`respuesta:${clave}/${autorSlugArchivo}`]?.sha256 === hash) {
+              throw new HttpError(400, `${item.nombre}: ya importada; se omite`);
+            }
+            const closedKeys = new Set();
+            const cerradas = path.join(root, "preguntas", "cerradas");
+            if (fs.existsSync(cerradas) && fs.statSync(cerradas).isDirectory()) {
+              for (const nombre of fs.readdirSync(cerradas).filter((n) => n.toLowerCase().endsWith(".md"))) {
+                const pregunta = parseQuestion(fs.readFileSync(path.join(cerradas, nombre), "utf8"), nombre);
+                closedKeys.add(`${pregunta.week}-${pregunta.slug}`);
+              }
+            }
+            const errores = validateResponse(parsed, { mdBytes: item.bytes, closedKeys });
+            if (errores.length) throw new HttpError(400, errores.join("; "));
+            const rel = `preguntas/respuestas/${clave}/${autorSlugArchivo}.md`;
+            const destino = rutaDentro(root, rel, ["preguntas"]);
+            if (fs.existsSync(destino)) throw new HttpError(400, `ya existe el borrador "${rel}"`);
+            escrituras.push({ rel, destino, contenido: item.contenido });
+          }
+        }
+        for (const escritura of escrituras) {
+          if (escritura.portada) {
+            escribirAtomico(escritura.portada.destino, escritura.portada.buffer);
+          }
+          escribirAtomico(escritura.destino, escritura.contenido);
+        }
+        return {
+          ok: true,
+          guardados: escrituras.map((e) => e.rel),
+          aviso: "Archivos del participante guardados. Simulá y confirmá antes de aplicar; guardar no publica.",
+        };
+      } finally {
+        if (fs.existsSync(staging) && staging.startsWith(path.resolve(TMP_BASE) + path.sep)) {
+          fs.rmSync(staging, { recursive: true, force: true });
+        }
+      }
+    });
   }
 
   async function borrarBorrador(body) {

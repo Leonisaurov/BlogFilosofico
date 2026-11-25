@@ -10,7 +10,17 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ROOT, TMP_BASE, ARTEFACTOS, Mutex, huella, rutaDentro, rutaDentroPreview } from "../tools/lib/workspace.mjs";
+import {
+  ROOT,
+  TMP_BASE,
+  ARTEFACTOS,
+  Mutex,
+  huella,
+  rutaDentro,
+  rutaDentroPreview,
+  crearTemporal,
+  ejecutarNode,
+} from "../tools/lib/workspace.mjs";
 import {
   esSi,
   validarPublicacion,
@@ -293,4 +303,225 @@ test("HTTP: preview staged no toca la semana real y sirve sin CSP", async (t) =>
 
   const traversal = await fetch(`${base}/__preview/${preview.id}/../../.git/config`);
   assert.notEqual(traversal.status, 200);
+});
+
+// --- Subida de archivos del participante ----------------------------------
+
+const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==";
+const JSON_HEADER = { "content-type": "application/json" };
+
+function rootTemporal(label) {
+  const dir = crearTemporal(`blogfilosofico-archivos-test-${label}-`);
+  for (const rel of ["js", "scripts", "envios", "preguntas", "feed.xml", "sitemap.xml", "css"]) {
+    fs.cpSync(path.join(ROOT, rel), path.join(dir, rel), { recursive: true });
+  }
+  return dir;
+}
+
+async function subir(base, tipo, archivos) {
+  return fetch(`${base}/api/archivos`, {
+    method: "POST",
+    headers: JSON_HEADER,
+    body: JSON.stringify({ tipo, archivos }),
+  });
+}
+
+test("HTTP: subir publicación y portada con el nombre del front matter", async (t) => {
+  const dir = rootTemporal("publicacion");
+  const panel = crearPanel({ root: dir, puerto: 0 });
+  const direccion = await panel.iniciar();
+  t.after(async () => {
+    await panel.cerrar();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${direccion.port}`;
+  const portada = "retrato-participante.png";
+  const md = [
+    "---",
+    'title: "Aporte del participante"',
+    "slug: aporte-del-participante",
+    'description: "Ensayo recibido por correo."',
+    'category: "Ensayo"',
+    'types: ["Ensayo"]',
+    'author: "Participante"',
+    `coverImage: "./assets/${portada}"`,
+    "createdAt: 2026-11-25",
+    `# Imagen local pendiente: copiar "${portada}" a la carpeta assets/`,
+    "---",
+    "",
+    "Texto del ensayo.",
+    "",
+  ].join("\n");
+
+  const respuesta = await subir(base, "publicacion", [
+    { nombre: "aporte.md", contenido: md },
+    { nombre: portada, contenido: "", dataUrl: PNG },
+  ]);
+  if (respuesta.status !== 200) assert.fail(`subida falló: ${await respuesta.text()}`);
+  const datos = await respuesta.json();
+  assert.ok(datos.guardados.includes("envios/aporte-del-participante.md"));
+  assert.ok(fs.existsSync(path.join(dir, "envios", portada)), "la portada conserva el nombre del front matter");
+  assert.equal(
+    fs.existsSync(path.join(dir, "envios", "aporte-del-participante-cover.png")),
+    false,
+    "NO se renombra a <slug>-cover.<ext>"
+  );
+  const estado = await (await fetch(`${base}/api/estado`)).json();
+  assert.ok(estado.borradores.some((b) => b.archivo === "envios/aporte-del-participante.md"));
+
+  const importador = await ejecutarNode(
+    ["scripts/import-submissions.mjs", "--apply", "--input", path.join(dir, "envios")],
+    { cwd: dir }
+  );
+  assert.equal(importador.code, 0, importador.stderr);
+  assert.match(importador.stdout, /aporte-del-participante\.md: válida/);
+});
+
+test("HTTP: subir pregunta y respuesta con autor-slug del nombre de archivo", async (t) => {
+  const dir = rootTemporal("pregunta-respuesta");
+  const panel = crearPanel({ root: dir, puerto: 0 });
+  const direccion = await panel.iniciar();
+  t.after(async () => {
+    await panel.cerrar();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${direccion.port}`;
+
+  const pregunta = [
+    "---",
+    'week: "2027-01-11"',
+    'slug: "pregunta-subida"',
+    'estado: "abierta"',
+    'question: "¿Qué es la justicia?"',
+    'context: "Contexto de la pregunta subida."',
+    "---",
+    "",
+    "Cuerpo de la pregunta.",
+    "",
+  ].join("\n");
+  const subidaPregunta = await subir(base, "pregunta", [
+    { nombre: "pregunta-subida.md", contenido: pregunta },
+  ]);
+  if (subidaPregunta.status !== 200) assert.fail(`pregunta: ${await subidaPregunta.text()}`);
+  assert.ok(
+    fs.existsSync(path.join(dir, "preguntas", "abiertas", "2027-01-11-pregunta-subida.md"))
+  );
+
+  const respuesta = [
+    "---",
+    'week: "2026-11-09"',
+    'slug: "no-pensar-sin-imagenes"',
+    'author: "Ana Nueva"',
+    "authorization: si",
+    "publicarEmail: no",
+    "---",
+    "",
+    "Una respuesta sin datos de terceros.",
+    "",
+  ].join("\n");
+  const subidaRespuesta = await subir(base, "respuesta", [
+    { nombre: "ana-nueva.md", contenido: respuesta },
+  ]);
+  if (subidaRespuesta.status !== 200) assert.fail(`respuesta: ${await subidaRespuesta.text()}`);
+  const destino = path.join(
+    dir, "preguntas", "respuestas", "2026-11-09-no-pensar-sin-imagenes", "ana-nueva.md"
+  );
+  assert.ok(fs.existsSync(destino), "el autor-slug sale del nombre del archivo");
+  const estado = await (await fetch(`${base}/api/estado`)).json();
+  assert.ok(estado.borradores.some((b) => b.archivo.endsWith("/ana-nueva.md")));
+});
+
+test("HTTP: rechaza traversal, tamaño por archivo y contenido ya importado", async (t) => {
+  const dir = rootTemporal("rechazos");
+  const panel = crearPanel({ root: dir, puerto: 0 });
+  const direccion = await panel.iniciar();
+  t.after(async () => {
+    await panel.cerrar();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${direccion.port}`;
+
+  const traversal = await subir(base, "publicacion", [{ nombre: "../mal.md", contenido: "x" }]);
+  assert.equal(traversal.status, 400);
+  assert.match((await traversal.json()).error, /nombre de archivo no seguro/);
+
+  const grande = await subir(base, "publicacion", [
+    { nombre: "grande.md", contenido: "a".repeat(512 * 1024 + 1) },
+  ]);
+  assert.equal(grande.status, 413);
+  assert.match((await grande.json()).error, /512 KiB/);
+
+  const imagenGrande = Buffer.alloc(2 * 1024 * 1024 + 1);
+  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(imagenGrande, 0);
+  const granImagen = await subir(base, "publicacion", [
+    {
+      nombre: "gran-portada.png",
+      contenido: "",
+      dataUrl: `data:image/png;base64,${imagenGrande.toString("base64")}`,
+    },
+  ]);
+  assert.equal(granImagen.status, 413);
+  assert.match((await granImagen.json()).error, /2 MiB/);
+
+  const yaImportada = fs.readFileSync(
+    path.join(ROOT, "preguntas", "cerradas", "2026-11-09-no-pensar-sin-imagenes.md"),
+    "utf8"
+  );
+  const repetida = await subir(base, "pregunta", [
+    { nombre: "2026-11-09-no-pensar-sin-imagenes.md", contenido: yaImportada },
+  ]);
+  assert.equal(repetida.status, 400);
+  assert.match((await repetida.json()).error, /ya importada/);
+  assert.equal(
+    fs.existsSync(path.join(dir, "preguntas", "cerradas", "2026-11-09-no-pensar-sin-imagenes.md.dup")),
+    false
+  );
+});
+
+test("HTTP: subir entre simular y aplicar da 409; ids de subida únicos", async (t) => {
+  const dir = rootTemporal("token");
+  const panel = crearPanel({ root: dir, puerto: 0 });
+  const direccion = await panel.iniciar();
+  t.after(async () => {
+    await panel.cerrar();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${direccion.port}`;
+
+  const simulacion = await fetch(`${base}/api/simular`, {
+    method: "POST", headers: JSON_HEADER, body: "{}",
+  });
+  const simulado = await simulacion.json();
+  assert.equal(simulado.ok, true);
+  const pregunta = [
+    "---",
+    'week: "2027-01-18"',
+    'slug: "pregunta-nueva"',
+    'estado: "abierta"',
+    'question: "¿Nueva pregunta?"',
+    'context: "Contexto."',
+    "---",
+    "",
+    "Cuerpo.",
+    "",
+  ].join("\n");
+  assert.equal((await subir(base, "pregunta", [{ nombre: "nueva.md", contenido: pregunta }])).status, 200);
+
+  const aplicar = await fetch(`${base}/api/aplicar`, {
+    method: "POST",
+    headers: JSON_HEADER,
+    body: JSON.stringify({ token: simulado.token, confirmacion: "APLICAR" }),
+  });
+  assert.equal(aplicar.status, 409);
+  assert.match((await aplicar.json()).error, /archivos nuevos|volvé a simular/);
+
+  const html = await (await fetch(`${base}/`)).text();
+  for (const id of [
+    "archivos-publicacion", "selector-publicacion", "boton-subir-publicacion", "lista-archivos-publicacion",
+    "archivos-pregunta", "selector-pregunta", "boton-subir-pregunta", "lista-archivos-pregunta",
+    "archivos-respuesta", "selector-respuesta", "boton-subir-respuesta", "lista-archivos-respuesta",
+  ]) {
+    assert.equal(html.split(`id="${id}"`).length - 1, 1, `${id} debe ser único`);
+  }
+  assert.equal(html.split('role="separator"').length - 1, 3, "un separador «o» por pestaña");
 });

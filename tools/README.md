@@ -51,8 +51,13 @@ inline.
 
 ## Flujo
 
-1. Completar el formulario (publicación, pregunta o respuesta) y **Guardar
-   borrador**.
+1. Enviar los archivos del participante (bloque «Archivos del participante» de
+   cada pestaña: `.md` y, si corresponde, la portada; se leen con `FileReader`
+   y llegan como JSON) **o** completar el formulario y **Guardar borrador**.
+   La subida valida el lote completo bajo el mismo mutex, escribe solo en
+   `envios/` o `preguntas/`, nombra la portada según el front matter y deja sin
+   efecto cualquier token de simulación anterior. No pre-llena el formulario:
+   «Abrir» sigue siendo bajo demanda.
 2. **Simular**: ejecuta ambos importadores sin `--apply` y compara huellas de
    entradas y artefactos. Solo si termina bien y no cambió nada emite un token
    válido durante 10 minutos.
@@ -92,6 +97,7 @@ unidad parcial tal como quedarían después de importar.
 | `/api/salud` | GET | Comprobación de vida |
 | `/api/estado` | GET | Borradores, token, vistas previas, catálogo |
 | `/api/borradores` | GET/POST/DELETE | Listar, guardar, borrar borradores |
+| `/api/archivos` | POST | Subir `.md` y portadas del participante con `{tipo, archivos:[{nombre, contenido, dataUrl?}]}` |
 | `/api/simular` | POST | Simulación sin `--apply`; emite token |
 | `/api/aplicar` | POST | Aplica con `confirmacion` y token |
 | `/api/preview` | POST | Crea la copia temporal y devuelve las vistas |

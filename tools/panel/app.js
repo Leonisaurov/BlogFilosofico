@@ -31,6 +31,106 @@ function valores(formulario) {
   return Object.fromEntries(new FormData(formulario).entries());
 }
 
+const SUBIDAS = [
+  { tipo: "publicacion", selector: "#selector-publicacion", boton: "#boton-subir-publicacion", lista: "#lista-archivos-publicacion" },
+  { tipo: "pregunta", selector: "#selector-pregunta", boton: "#boton-subir-pregunta", lista: "#lista-archivos-pregunta" },
+  { tipo: "respuesta", selector: "#selector-respuesta", boton: "#boton-subir-respuesta", lista: "#lista-archivos-respuesta" },
+];
+const MD_MAX = 512 * 1024;
+const IMG_MAX = 2 * 1024 * 1024;
+const estadoArchivos = { publicacion: [], pregunta: [], respuesta: [] };
+
+function leerArchivoSubida(file, comoDataUrl) {
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(String(lector.result));
+    lector.onerror = () => reject(new Error(`no se pudo leer ${file.name}`));
+    if (comoDataUrl) lector.readAsDataURL(file);
+    else lector.readAsText(file);
+  });
+}
+
+/** Lee .md como texto y portadas como data-URL; el servidor vuelve a validar. */
+async function prepararArchivos(files) {
+  const preparados = [];
+  for (const file of files) {
+    const nombre = file.name;
+    if (/\.md$/i.test(nombre)) {
+      if (file.size > MD_MAX) {
+        preparados.push({ nombre, error: "supera 512 KiB" });
+      } else {
+        preparados.push({ nombre, contenido: await leerArchivoSubida(file, false) });
+      }
+    } else if (/\.(jpe?g|png|webp)$/i.test(nombre)) {
+      if (file.size > IMG_MAX) {
+        preparados.push({ nombre, error: "supera 2 MiB" });
+      } else {
+        preparados.push({ nombre, dataUrl: await leerArchivoSubida(file, true) });
+      }
+    } else {
+      preparados.push({ nombre, error: "tipo no admitido (use .md, JPG, PNG o WebP)" });
+    }
+  }
+  return preparados;
+}
+
+function pintarArchivos(config) {
+  $(config.lista).replaceChildren(...estadoArchivos[config.tipo].map((entrada) => {
+    const item = document.createElement("li");
+    item.className = entrada.ok ? "aceptado" : "rechazado";
+    item.textContent = `${entrada.ok ? "✓" : "✗"} ${entrada.nombre}${entrada.detalle ? ` — ${entrada.detalle}` : ""}`;
+    return item;
+  }));
+}
+
+async function enviarArchivos(config) {
+  const selector = $(config.selector);
+  const files = [...(selector.files ?? [])];
+  if (!files.length) {
+    registrar("Elegí al menos un archivo del participante.", true);
+    return;
+  }
+  try {
+    const preparados = await prepararArchivos(files);
+    const enviables = preparados.filter((entrada) => !entrada.error);
+    const rechazados = preparados.filter((entrada) => entrada.error);
+    for (const entrada of rechazados) {
+      estadoArchivos[config.tipo].push({ nombre: entrada.nombre, ok: false, detalle: entrada.error });
+    }
+    if (enviables.length) {
+      const cuerpo = {
+        tipo: config.tipo,
+        archivos: enviables.map((entrada) => ({
+          nombre: entrada.nombre,
+          contenido: entrada.contenido ?? "",
+          ...(entrada.dataUrl ? { dataUrl: entrada.dataUrl } : {}),
+        })),
+      };
+      try {
+        const resultado = await api("/api/archivos", {
+          method: "POST",
+          body: JSON.stringify(cuerpo),
+        });
+        for (const entrada of enviables) {
+          estadoArchivos[config.tipo].push({ nombre: entrada.nombre, ok: true, detalle: "guardado" });
+        }
+        registrar(`${resultado.aviso}\n${resultado.guardados.join("\n")}`);
+      } catch (error) {
+        for (const entrada of enviables) {
+          estadoArchivos[config.tipo].push({ nombre: entrada.nombre, ok: false, detalle: error.message });
+        }
+        registrar(error.message, true);
+      }
+    }
+    selector.value = "";
+  } catch (error) {
+    registrar(error.message, true);
+  } finally {
+    pintarArchivos(config);
+    await cargarEstado();
+  }
+}
+
 function hoy() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -228,6 +328,12 @@ function inicializar() {
   document.querySelectorAll(".pestaña").forEach((boton) => {
     boton.addEventListener("click", () => activarPestaña(boton.dataset.tab));
   });
+
+  // La subida NO pre-llena el formulario: «Abrir» sigue siendo bajo demanda.
+  for (const config of SUBIDAS) {
+    $(config.boton).addEventListener("click", () => enviarArchivos(config));
+    pintarArchivos(config);
+  }
 
   const enlaceDrive = $("#drive-link");
   const formPublicacion = $("#form-publicacion");

@@ -97,6 +97,57 @@ footer {
 
 .oculto { display: none; }
 
+.archivos-participante {
+  margin: 1rem 0 0.6rem;
+  padding: 1rem 1.2rem;
+  border: 1px dashed var(--line-strong, #c2ab8f);
+  border-radius: 8px;
+  background: var(--paper-note, #fbf7ed);
+}
+
+.archivos-participante h3 {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--accent-deep, #70513a);
+}
+
+.archivos-participante input[type="file"] { max-width: 100%; }
+
+.lista-archivos {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  font-size: 0.88rem;
+}
+
+.lista-archivos li {
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--line-soft, #e2d3bf);
+}
+
+.lista-archivos .aceptado { color: var(--ink-sage, #5c674c); }
+.lista-archivos .rechazado { color: var(--danger, #9c3b25); }
+
+.o-separador {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin: 0.9rem 0 0;
+  color: var(--text-dim, #6f6152);
+  font-size: 0.9rem;
+}
+
+.o-separador::before,
+.o-separador::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--line, #d6c3ab);
+}
+
+.o-separador span { padding: 0 0.2rem; }
+
 .formulario {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

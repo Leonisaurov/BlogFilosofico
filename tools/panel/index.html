@@ -29,6 +29,15 @@
     <section class="panel" id="tab-publicacion">
       <h2>Publicación</h2>
       <p class="nota">Usa <strong>Texto oficial</strong> solo con <code>kind: oficial</code>, el tipo «Texto oficial» y la cita de portada. Documento y «pendiente» se excluyen.</p>
+      <div class="archivos-participante" id="archivos-publicacion">
+        <h3>Archivos del participante (.md y portada)</h3>
+        <input type="file" multiple id="selector-publicacion"
+               accept=".md,.markdown,text/markdown,image/jpeg,image/png,image/webp" />
+        <button type="button" id="boton-subir-publicacion">Añadir archivos</button>
+        <ul class="lista-archivos" id="lista-archivos-publicacion"></ul>
+      </div>
+      <p class="o-separador" role="separator"><span>o</span></p>
+      <p class="nota">o completar el formulario</p>
       <form id="form-publicacion" class="formulario">
         <label>Título <input name="title" required /></label>
         <label>Slug <input name="slug" placeholder="se genera desde el título" /></label>
@@ -62,6 +71,15 @@
     <section class="panel oculto" id="tab-pregunta">
       <h2>Pregunta de la semana</h2>
       <p class="nota">La <code>week</code> debe ser un lunes ISO. El <code>estado</code> decide si se guarda en <code>abiertas/</code> o <code>cerradas/</code>.</p>
+      <div class="archivos-participante" id="archivos-pregunta">
+        <h3>Archivos del participante (.md y portada)</h3>
+        <input type="file" multiple id="selector-pregunta"
+               accept=".md,.markdown,text/markdown,image/jpeg,image/png,image/webp" />
+        <button type="button" id="boton-subir-pregunta">Añadir archivos</button>
+        <ul class="lista-archivos" id="lista-archivos-pregunta"></ul>
+      </div>
+      <p class="o-separador" role="separator"><span>o</span></p>
+      <p class="nota">o completar el formulario</p>
       <form id="form-pregunta" class="formulario">
         <label>Semana (lunes) <input name="week" type="date" required /></label>
         <label>Slug <input name="slug" required /></label>
@@ -80,6 +98,15 @@
     <section class="panel oculto" id="tab-respuesta">
       <h2>Respuesta recibida</h2>
       <p class="nota">La respuesta entra en la unidad solo con <code>authorization: si</code>. El correo se publica únicamente con <code>publicarEmail: si</code> y un email válido.</p>
+      <div class="archivos-participante" id="archivos-respuesta">
+        <h3>Archivos del participante (.md y portada)</h3>
+        <input type="file" multiple id="selector-respuesta"
+               accept=".md,.markdown,text/markdown,image/jpeg,image/png,image/webp" />
+        <button type="button" id="boton-subir-respuesta">Añadir archivos</button>
+        <ul class="lista-archivos" id="lista-archivos-respuesta"></ul>
+      </div>
+      <p class="o-separador" role="separator"><span>o</span></p>
+      <p class="nota">o completar el formulario</p>
       <form id="form-respuesta" class="formulario">
         <label>Semana de la pregunta (lunes) <input name="week" type="date" required /></label>
         <label>Slug de la pregunta <input name="slug" required /></label>
