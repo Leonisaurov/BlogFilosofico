@@ -15,6 +15,7 @@
 
 import { SITE } from "../data/config.js";
 import { TEXT_TYPES } from "../data/sections.js";
+import { documentUrlFromDriveLink } from "../lib/document-embed.js";
 import { escapeHtml } from "../lib/dom.js";
 import { extractHeadings } from "../lib/headings.js";
 import { CATEGORY_OPTIONS, createPublication, isPublicationEmpty, normalizeTypes } from "../lib/publication.js";
@@ -32,6 +33,7 @@ import { createArticleView, updateArticleView } from "./article-view.js";
 import { createCard, updateCard } from "./card.js";
 
 const FENCE = "```";
+const OFFICIAL_TYPE = "Texto oficial";
 
 const BACK_ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -87,8 +89,14 @@ function fingerprint(publication) {
     publication.title,
     publication.description,
     publication.category,
+    (publication.types ?? []).join("\u0000"),
     publication.author,
     publication.coverImage,
+    publication.cover?.credit ?? "",
+    publication.kind ?? "",
+    publication.documentUrl ?? "",
+    publication.driveLink ?? "",
+    publication.documentoPendiente ? "si" : "",
     publication.content,
   ].join("\u0000");
   let hash = 5381;
@@ -242,6 +250,43 @@ export function createEditor(root, { onClose } = {}) {
               <input data-field="author" placeholder="Nombre y apellido" />
             </label>
 
+            <div class="editor__field editor__field--wide editor__official-toggle">
+              <span>Formato académico</span>
+              <label class="editor__checkline">
+                <input type="checkbox" data-official-toggle />
+                <span>Texto oficial / formato académico (documento externo)</span>
+              </label>
+            </div>
+
+            <div class="editor__official" data-official-fields hidden>
+              <label class="editor__field">
+                <span>Cita bajo la portada</span>
+                <input data-field="coverCredit" placeholder="Autor, obra · dominio público" />
+              </label>
+              <label class="editor__field">
+                <span>Documento · URL HTTPS del visor externo</span>
+                <input data-field="documentUrl" type="url" placeholder="https://visor.ejemplo.com/documento" />
+              </label>
+              <div class="editor__field editor__field--wide editor__drive">
+                <button type="button" class="editor__ghost" data-drive-upload>
+                  Subir documento a Google Drive
+                </button>
+                <label class="editor__field">
+                  <span>Enlace de Google Drive</span>
+                  <input data-field="driveLink" type="url" data-drive-link
+                         placeholder="https://drive.google.com/file/d/…/view?usp=sharing" />
+                </label>
+                <p class="editor__cover-hint" data-drive-hint>
+                  Subí el archivo, compartilo como <em>Cualquiera con el enlace</em> y pegá acá el enlace al volver.
+                  El blog guarda solo el enlace del visor: <code>https://drive.google.com/file/d/&lt;ID&gt;/preview</code>.
+                </p>
+              </div>
+              <label class="editor__field editor__field--wide editor__checkline">
+                <input type="checkbox" data-official-pending />
+                <span>Documento pendiente de elegir servicio (el .docx se revisa por correo)</span>
+              </label>
+            </div>
+
             <label class="editor__field editor__field--wide">
               <span>Portada · URL de imagen</span>
               <input data-field="coverImage" type="url"
@@ -385,6 +430,15 @@ export function createEditor(root, { onClose } = {}) {
             </div>
             <p class="proposal__step-text" data-proposal-local-text></p>
           </li>
+
+          <li class="proposal__step proposal__step--info" data-proposal-step="official" hidden>
+            <div class="proposal__step-head">
+              <span class="proposal__step-num" aria-hidden="true">i</span>
+              <h3 class="proposal__step-title">Documento del texto oficial</h3>
+              <span class="proposal__status" data-proposal-official-status>Pendiente</span>
+            </div>
+            <p class="proposal__step-text" data-proposal-official-text></p>
+          </li>
         </ol>
 
         <fieldset class="proposal__confirm">
@@ -405,6 +459,12 @@ export function createEditor(root, { onClose } = {}) {
             <input type="checkbox" data-proposal-check-cover />
             <span>He descargado la imagen de portada y entiendo que también debo
               adjuntarla al correo.</span>
+          </label>
+
+          <label class="proposal__check" data-proposal-check-official-row hidden>
+            <input type="checkbox" data-proposal-check-official />
+            <span>Revisé la URL HTTPS del visor o adjunté el .docx y el equipo
+              autorizó el estado «documento pendiente».</span>
           </label>
         </fieldset>
 
@@ -464,6 +524,15 @@ export function createEditor(root, { onClose } = {}) {
   const proposalCheckCoverRow = root.querySelector("[data-proposal-check-cover-row]");
   const proposalConfirmHint = root.querySelector("[data-proposal-confirm-hint]");
   const proposalContinue = root.querySelector("[data-proposal-continue]");
+  const officialToggle = root.querySelector("[data-official-toggle]");
+  const officialFields = root.querySelector("[data-official-fields]");
+  const officialPending = root.querySelector("[data-official-pending]");
+  const driveUploadButton = root.querySelector("[data-drive-upload]");
+  const proposalOfficialStep = root.querySelector('[data-proposal-step="official"]');
+  const proposalOfficialStatus = root.querySelector("[data-proposal-official-status]");
+  const proposalOfficialText = root.querySelector("[data-proposal-official-text]");
+  const proposalCheckOfficial = root.querySelector("[data-proposal-check-official]");
+  const proposalCheckOfficialRow = root.querySelector("[data-proposal-check-official-row]");
   const modeButtons = [...root.querySelectorAll("[data-mode-btn]")];
   const previewTabs = [...root.querySelectorAll("[data-preview-tab]")];
   const undoButton = root.querySelector('[data-action="undo"]');
@@ -478,6 +547,12 @@ export function createEditor(root, { onClose } = {}) {
     author: SITE.defaultAuthor,
     coverImage: "",
     coverLocalName: "",
+    cover: {},
+    kind: "",
+    documentUrl: "",
+    driveLink: "",
+    coverCredit: "",
+    documentoPendiente: false,
     content: "",
     createdAt: "",
     localCoverUrl: "",
@@ -496,6 +571,7 @@ export function createEditor(root, { onClose } = {}) {
     mdRequested: false,
     coverRequested: false,
     coverRemote: false,
+    official: false,
   };
 
   let isOpen = false;
@@ -522,6 +598,13 @@ export function createEditor(root, { onClose } = {}) {
       author: state.author,
       coverImage: forPreview ? state.localCoverUrl || state.coverImage : state.coverImage,
       coverLocalName: state.coverLocalName,
+      // `cover.credit` es la fuente única de la cita: no se emite un
+      // `coverCredit` top-level. Los campos se propagan también a la preview.
+      cover: { ...state.cover, credit: state.coverCredit },
+      kind: state.kind,
+      documentUrl: state.documentUrl,
+      driveLink: state.driveLink,
+      documentoPendiente: state.documentoPendiente,
       content: state.content,
       createdAt: state.createdAt,
     });
@@ -573,25 +656,74 @@ export function createEditor(root, { onClose } = {}) {
 
   // --- Formulario --------------------------------------------------------
 
+  /** Asigna solo si cambia: no mueve el cursor mientras se escribe. */
+  function setValue(el, value) {
+    if (el && el.value !== value) el.value = value;
+  }
+
+  /**
+   * El tipo «Texto oficial» va con la casilla: al marcar se añade (sin borrar
+   * los otros tipos) y al desmarcar se quita SOLO ese tipo. Se llama al leer el
+   * formulario, al cargar un borrador y al escribir el formulario.
+   */
+  function syncOfficialType() {
+    const checked = state.kind === "oficial";
+    const others = state.types.filter((type) => type !== OFFICIAL_TYPE);
+    if (checked && !state.types.includes(OFFICIAL_TYPE)) {
+      state.types = [...others, OFFICIAL_TYPE];
+    } else if (!checked) {
+      state.types = others;
+    }
+    officialToggle.checked = checked;
+    officialFields.hidden = !checked;
+    fieldEls.documentUrl.disabled = !checked;
+    fieldEls.driveLink.disabled = !checked;
+    if (driveUploadButton) driveUploadButton.disabled = !checked;
+    fieldEls.coverCredit.disabled = !checked;
+    officialPending.disabled = !checked;
+    if (!checked) {
+      state.documentoPendiente = false;
+      officialPending.checked = false;
+    }
+  }
+
   function readForm() {
     state.title = fieldEls.title.value;
     state.description = fieldEls.description.value;
     state.category = fieldEls.category.value;
     state.types = normalizeTypes(fieldEls.types.value);
     state.author = fieldEls.author.value;
+    state.kind = officialToggle.checked ? "oficial" : "";
+    state.documentUrl = fieldEls.documentUrl.value;
+    state.driveLink = fieldEls.driveLink.value;
+    state.coverCredit = fieldEls.coverCredit.value;
+    state.documentoPendiente = officialPending.checked;
+    // XOR: declarar el documento pendiente descarta la URL del visor.
+    if (state.documentoPendiente) state.documentUrl = "";
+    // El contenido también se lee del DOM: sin esta línea `writeForm()` volvería
+    // a escribir el valor anterior y el borrador perdería el cuerpo Markdown.
     state.content = contentEl.value;
+    syncOfficialType();
+    // La casilla puede haber añadido o quitado el tipo: el input debe coincidir.
+    writeForm();
   }
 
   function writeForm() {
-    fieldEls.title.value = state.title;
-    fieldEls.description.value = state.description;
-    fieldEls.category.value = state.category;
-    fieldEls.types.value = state.types.join(", ");
-    fieldEls.author.value = state.author;
-    fieldEls.coverImage.value = state.coverImage.startsWith("data:")
-      ? ""
-      : state.coverImage;
-    contentEl.value = state.content;
+    syncOfficialType();
+    setValue(fieldEls.title, state.title);
+    setValue(fieldEls.description, state.description);
+    setValue(fieldEls.category, state.category);
+    setValue(fieldEls.types, state.types.join(", "));
+    setValue(fieldEls.author, state.author);
+    setValue(
+      fieldEls.coverImage,
+      state.coverImage.startsWith("data:") ? "" : state.coverImage
+    );
+    setValue(fieldEls.coverCredit, state.coverCredit);
+    setValue(fieldEls.documentUrl, state.documentUrl);
+    setValue(fieldEls.driveLink, state.driveLink);
+    officialPending.checked = state.documentoPendiente;
+    setValue(contentEl, state.content);
     renderCoverThumb();
   }
 
@@ -640,6 +772,12 @@ export function createEditor(root, { onClose } = {}) {
       author: state.author,
       coverImage: state.coverImage,
       coverLocalName: state.coverLocalName,
+      cover: { ...state.cover },
+      kind: state.kind,
+      documentUrl: state.documentUrl,
+      driveLink: state.driveLink,
+      coverCredit: state.coverCredit,
+      documentoPendiente: state.documentoPendiente,
       content: state.content,
     };
   }
@@ -674,6 +812,12 @@ export function createEditor(root, { onClose } = {}) {
     state.author = entry.author;
     state.coverImage = entry.coverImage;
     state.coverLocalName = entry.coverLocalName;
+    state.cover = { ...(entry.cover ?? {}) };
+    state.kind = entry.kind ?? "";
+    state.documentUrl = entry.documentUrl ?? "";
+    state.driveLink = entry.driveLink ?? "";
+    state.coverCredit = entry.coverCredit ?? "";
+    state.documentoPendiente = Boolean(entry.documentoPendiente);
     state.content = entry.content;
     writeForm();
     renderAllPreviews();
@@ -1011,11 +1155,13 @@ export function createEditor(root, { onClose } = {}) {
     const mdReady = proposal.mdRequested && proposalCheckMd.checked;
     const coverReady =
       !proposal.coverRemote || (proposal.coverRequested && proposalCheckCover.checked);
-    proposalContinue.disabled = !(mdReady && coverReady);
-    // El aviso deja de mostrarse cuando ya se iniciaron las descargas aplicables.
+    const officialReady = !proposal.official || proposalCheckOfficial.checked;
+    proposalContinue.disabled = !(mdReady && coverReady && officialReady);
+    // El aviso deja de mostrarse cuando ya se iniciaron las descargas aplicables
+    // y, si corresponde, se confirmó la URL del documento o el .docx adjuntado.
     const pendingDownloads =
       !proposal.mdRequested || (proposal.coverRemote && !proposal.coverRequested);
-    proposalConfirmHint.hidden = !pendingDownloads;
+    proposalConfirmHint.hidden = !(pendingDownloads || (proposal.official && !officialReady));
   }
 
   /** Descarga la portada remota; si el navegador la bloquea, ofrece abrirla. */
@@ -1074,6 +1220,7 @@ export function createEditor(root, { onClose } = {}) {
     proposal.mdRequested = false;
     proposal.coverRequested = false;
     proposal.coverRemote = remote;
+    proposal.official = state.kind === "oficial";
 
     proposalCheckMd.checked = false;
     proposalCheckMd.disabled = true;
@@ -1084,8 +1231,18 @@ export function createEditor(root, { onClose } = {}) {
     proposalLocalStep.hidden = true;
     proposalOpenCover.hidden = true;
     proposalOpenCover.removeAttribute("href");
+    proposalOfficialStep.hidden = !proposal.official;
+    proposalCheckOfficialRow.hidden = !proposal.official;
+    proposalCheckOfficial.checked = false;
+    proposalCheckOfficial.disabled = !proposal.official;
     setProposalStatus(proposalMdStatus, "Pendiente", "pending");
     setProposalStatus(proposalCoverStatus, "Pendiente", "pending");
+    if (proposal.official) {
+      proposalOfficialText.textContent = state.documentUrl
+        ? `El texto oficial declara la URL ${state.documentUrl} (visor de Google Drive). Confirmá que el enlace sea público —«Cualquiera con el enlace»— y que apunte al visor correcto: el archivo no se aloja en este sitio.`
+        : "El documento queda pendiente de elegir servicio. Adjuntá el .docx al correo y confirmá que el equipo autorizó ese estado.";
+      setProposalStatus(proposalOfficialStatus, "Pendiente", "pending");
+    }
     shareFeedback.textContent = "";
 
     // Imagen local del usuario (data-URL o archivo elegido): no es un
@@ -1202,6 +1359,12 @@ export function createEditor(root, { onClose } = {}) {
     state.author = SITE.defaultAuthor;
     state.coverImage = "";
     state.coverLocalName = "";
+    state.cover = {};
+    state.kind = "";
+    state.documentUrl = "";
+    state.driveLink = "";
+    state.coverCredit = "";
+    state.documentoPendiente = false;
     state.content = "";
     state.createdAt = "";
     releaseLocalCoverUrl();
@@ -1232,6 +1395,12 @@ export function createEditor(root, { onClose } = {}) {
       state.author = publication.author || SITE.defaultAuthor;
       state.coverImage = publication.coverImage;
       state.coverLocalName = publication.coverLocalName;
+      state.cover = { ...(publication.cover ?? {}) };
+      state.kind = publication.kind ?? "";
+      state.documentUrl = publication.documentUrl ?? "";
+      state.driveLink = publication.driveLink ?? "";
+      state.coverCredit = publication.cover?.credit ?? "";
+      state.documentoPendiente = Boolean(publication.documentoPendiente);
       state.content = publication.content;
       state.createdAt = publication.createdAt;
       state.sharedFingerprint = draft.sharedFingerprint;
@@ -1304,6 +1473,12 @@ export function createEditor(root, { onClose } = {}) {
     state.author = SITE.defaultAuthor;
     state.coverImage = "";
     state.coverLocalName = "";
+    state.cover = {};
+    state.kind = "";
+    state.documentUrl = "";
+    state.driveLink = "";
+    state.coverCredit = "";
+    state.documentoPendiente = false;
     state.content = "";
     state.createdAt = "";
     releaseLocalCoverUrl();
@@ -1324,6 +1499,59 @@ export function createEditor(root, { onClose } = {}) {
 
   ["title", "description", "category", "types", "author", "content"].forEach((name) => {
     fieldEls[name].addEventListener("input", onInput);
+  });
+
+  // Campos del «Texto oficial»: la cita y la URL se tratan como el resto de
+  // datos (borrador, historial y previsualización se actualizan igual).
+  ["coverCredit", "documentUrl"].forEach((name) => {
+    fieldEls[name].addEventListener("input", onInput);
+  });
+  officialToggle.addEventListener("change", onInput);
+  officialPending.addEventListener("change", onInput);
+
+  /**
+   * Drive: el enlace pegado se convierte al visor y pasa a `documentUrl`.
+   * Nunca se escribe `driveLink` en el `.md`: es solo estado del borrador.
+   */
+  function convertirEnlaceDrive(valor) {
+    try {
+      const url = documentUrlFromDriveLink(valor);
+      state.documentUrl = url;
+      state.documentoPendiente = false;
+      officialPending.checked = false;
+      setNotice("");
+      writeForm();
+      schedulePreview();
+      schedulePersist();
+      scheduleHistory();
+      updateShareState();
+      return true;
+    } catch (error) {
+      setNotice(error.message);
+      return false;
+    }
+  }
+
+  if (driveUploadButton) {
+    driveUploadButton.addEventListener("click", () => {
+      window.open("https://drive.google.com/", "_blank", "noopener");
+      readForm();
+      fieldEls.driveLink.focus();
+      setNotice("Pegá acá el enlace cuando vuelvas de Drive");
+    });
+  }
+  fieldEls.driveLink.addEventListener("paste", (event) => {
+    const texto = event.clipboardData?.getData("text") ?? "";
+    if (!texto) return;
+    event.preventDefault();
+    state.driveLink = texto.trim();
+    fieldEls.driveLink.value = state.driveLink;
+    if (!convertirEnlaceDrive(state.driveLink)) fieldEls.driveLink.focus();
+  });
+  fieldEls.driveLink.addEventListener("input", () => {
+    state.driveLink = fieldEls.driveLink.value;
+    if (/drive\.google\.com/i.test(state.driveLink)) convertirEnlaceDrive(state.driveLink);
+    else onInput();
   });
 
   // La URL de portada se gestiona aparte: escribir una URL descarta la local.

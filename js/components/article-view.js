@@ -8,7 +8,9 @@
  */
 
 import { articleHref } from "../data/articles.js";
-import { coverDataUri } from "../lib/cover.js";
+import { SITE } from "../data/config.js";
+import { coverCreditHtml, coverDataUri } from "../lib/cover.js";
+import { canEmbed, parseDocumentUrl } from "../lib/document-embed.js";
 import { escapeHtml } from "../lib/dom.js";
 import { formatDate } from "../lib/format.js";
 import { withLoading } from "../lib/loading.js";
@@ -76,10 +78,36 @@ function coverHtml(article) {
   return `<div class="reader__cover-fallback"></div>`;
 }
 
-function creditHtml(article) {
-  return article.cover?.credit
-    ? `<figcaption class="reader__credit">${escapeHtml(article.cover.credit)}</figcaption>`
+/**
+ * Documento de un «Texto oficial». El iframe SOLO se crea si el host figura en
+ * `SITE.documentEmbedHosts` (único gate; hoy solo drive.google.com). Si el
+ * host no coincide se muestra el aviso y un enlace directo: nunca un iframe
+ * fingido.
+ */
+function documentHtml(article) {
+  if (article.kind !== "oficial") return "";
+  let url = null;
+  if (article.documentUrl) {
+    try {
+      url = parseDocumentUrl(article.documentUrl);
+    } catch {
+      url = null;
+    }
+  }
+  if (url && canEmbed(url.hostname, SITE.documentEmbedHosts)) {
+    return `<div class="reader__document">
+      <iframe class="reader__document-frame" src="${escapeHtml(url.href)}"
+        title="Documento oficial: ${escapeHtml(article.title || "lectura")}"
+        loading="lazy" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin"></iframe>
+    </div>`;
+  }
+  const link = url
+    ? `<a class="reader__document-link" href="${escapeHtml(url.href)}"
+        target="_blank" rel="noopener noreferrer">Abrir documento en el visor externo</a>`
     : "";
+  return `<aside class="reader__document reader__document--pending" role="note">
+      <p class="reader__document-note">Documento pendiente de elegir servicio</p>${link}
+    </aside>`;
 }
 
 function footerHtml(next) {
@@ -129,6 +157,7 @@ export function createArticleView(article, { next = null } = {}) {
     <figure class="reader__cover" data-cover></figure>
     <p class="reader__lede" data-lede></p>
     <div class="reader__body markdown" data-body></div>
+    <div class="reader__document-slot" data-document></div>
     ${next ? footerHtml(next) : ""}
   `;
   updateArticleView(view, article);
@@ -151,11 +180,20 @@ export function updateArticleView(view, article) {
 
   scheduleBody(view, article);
 
+  const documentSlot = view.querySelector("[data-document]");
+  if (documentSlot) documentSlot.innerHTML = documentHtml(article);
+
   const cover = view.querySelector("[data-cover]");
-  const signature = article.coverImage || "";
+  // La cita y el documento también cambian la portada visible: entran en la
+  // firma para que la previsualización se refresque sin recrear la vista.
+  const signature = [
+    article.coverImage || "",
+    article.cover?.credit || "",
+    article.documentUrl || "",
+  ].join("\u0000");
   if (cover.dataset.coverImage !== signature) {
     cover.dataset.coverImage = signature;
-    cover.innerHTML = `${coverHtml(article)}${creditHtml(article)}`;
+    cover.innerHTML = `${coverHtml(article)}${coverCreditHtml(article)}`;
     applyCoverFallback(view, article);
   }
 }

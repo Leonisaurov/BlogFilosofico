@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Carta abierta con una pregunta">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M52 44h136v88H52z"/>
+    <path d="M52 44l68 48 68-48"/>
+    <path d="M108 118l28-32"/>
+    <path d="M136 86a13 13 0 1 0 12 18"/>
+    <path d="M148 120v2"/>
+  </g>
+</svg>

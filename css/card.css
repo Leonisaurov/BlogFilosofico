@@ -38,6 +38,20 @@
   opacity: 1;
 }
 
+/* Cita bajo la portada: la misma fuente (`cover.credit`) que el lector. */
+.post__credit {
+  position: absolute;
+  right: clamp(16px, 4.2vw, 26px);
+  bottom: clamp(12px, 3vw, 20px);
+  max-width: 42%;
+  margin: 0;
+  font-size: 0.62rem;
+  line-height: 1.35;
+  text-align: right;
+  color: var(--on-cover);
+  text-shadow: 0 1px 8px rgba(28, 19, 12, 0.8);
+}
+
 @media (hover: hover) {
   .post:not([data-static="true"]):hover .post__img.is-loaded,
   .post:not([data-static="true"]):hover .post__cover {

@@ -17,6 +17,8 @@
  *                  (auxiliar; solo para exportar/compartir).
  *   content        Contenido completo en Markdown.
  *   createdAt      Fecha de creación (YYYY-MM-DD).
+ *   driveLink      Enlace pegado por el usuario al subir a Google Drive. Solo
+ *                  estado local del editor: NUNCA se emite en el front matter.
  *
  * El contenido Markdown es el cuerpo completo; la descripción breve es un
  * campo aparte y nunca se confunde con él.
@@ -54,6 +56,10 @@ export function normalizeTypes(value) {
   return out;
 }
 
+function plainObject(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? { ...value } : {};
+}
+
 /** Normaliza datos parciales a una publicación completa. */
 export function createPublication(partial = {}) {
   const title = String(partial.title ?? "").trim();
@@ -68,6 +74,15 @@ export function createPublication(partial = {}) {
     author: String(partial.author ?? "").trim(),
     coverImage: String(partial.coverImage ?? "").trim(),
     coverLocalName: String(partial.coverLocalName ?? "").trim(),
+    // Metadatos aditivos del «Texto oficial». `cover.credit` es la única
+    // fuente de la cita bajo la portada: no hay `coverCredit` top-level.
+    cover: plainObject(partial.cover),
+    kind: String(partial.kind ?? "").trim(),
+    documentUrl: String(partial.documentUrl ?? "").trim(),
+    // Estado local del editor: se guarda en el borrador para repoblar el campo,
+    // pero `toFrontMatter` no lo emite (el `.md` solo lleva `documentUrl`).
+    driveLink: String(partial.driveLink ?? "").trim(),
+    documentoPendiente: Boolean(partial.documentoPendiente),
     content: String(partial.content ?? ""),
     createdAt: partial.createdAt || new Date().toISOString().slice(0, 10),
   };
@@ -101,6 +116,19 @@ export function toFrontMatter(publication) {
     `coverImage: ${yamlValue(publication.coverImage)}`,
     `createdAt: ${publication.createdAt}`,
   ];
+  // La cita bajo la portada viaja dentro de `cover`, nunca como clave aparte.
+  if (Object.keys(plainObject(publication.cover)).length) {
+    lines.push(`cover: ${JSON.stringify(plainObject(publication.cover))}`);
+  }
+  if (publication.kind === "oficial") {
+    lines.push("kind: oficial");
+    if (publication.documentUrl) {
+      lines.push(`documentUrl: ${yamlValue(publication.documentUrl)}`);
+    }
+    if (publication.documentoPendiente) {
+      lines.push("documentoPendiente: si");
+    }
+  }
   if (publication.coverLocalName) {
     lines.push(`# Imagen local pendiente: copiar "${publication.coverLocalName}" a la carpeta assets/ del proyecto.`);
   }

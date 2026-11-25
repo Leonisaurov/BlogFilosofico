@@ -196,11 +196,23 @@ mismo marcado.
 ## Pregunta de la semana
 
 `#/pregunta` abre una pregunta nueva cada lunes y conserva un archivo de
-preguntas anteriores. Como el sitio es estático, la respuesta se envía por
-correo: no hay formulario falso ni backend. El texto de la pregunta y su
-archivo viven en `js/data/editorial.js` (`CURRENT_QUESTION`); para cambiar la
-pregunta de la semana, editá ese objeto y desplegá de nuevo. Para archivar una
-pregunta, agregala a `CURRENT_QUESTION.archive`.
+semanas anteriores. Como el sitio es estático, la respuesta se envía por correo:
+no hay formulario falso ni backend. La pregunta abierta y el archivo viven en
+el módulo generado `js/data/questions.js`; las fuentes están en `preguntas/`
+(`abiertas/`, `cerradas/` y `respuestas/`). El flujo lunes→domingo y los
+esquemas están en `preguntas/README.md`.
+
+Cada semana cerrada con respuestas autorizadas se publica como **una unidad**
+(`types: ["Unidad"]`, categoría «Pregunta de la semana») dentro de
+`js/data/contributions.js`, y queda enlazada desde el archivo, el índice y
+`#/secciones/unidad`. Las respuestas se publican tal cual, sin editar el
+estilo; solo se excluyen las dañinas y las no autorizadas. El correo del autor
+no se publica salvo autorización explícita. Las semanas sin respuestas se
+archivan con `unidad: no`: aparecen en el archivo sin generar artículos vacíos.
+
+El administrador importa y despliega el domingo a mano: **no hay cron, backend
+ni publicación automática**. Ver «Incorporar una pregunta y sus respuestas» más
+abajo.
 
 ## Política editorial y periodicidades
 
@@ -214,6 +226,11 @@ concretos:
 - correcciones posteriores visibles y fechadas;
 - una periodicidad quincenal para las aportaciones y semanal para las
   preguntas.
+
+Esos plazos y esas dos rondas de edición son compromisos de las
+**aportaciones**, no de las respuestas a la pregunta de la semana: estas se
+publican tal cual o se excluyen, sin edición de estilo. La pregunta se abre el
+lunes y las respuestas autorizadas se publican el domingo.
 
 El contenido completo vive en `js/data/editorial.js`; la vista solo compone.
 Estos compromisos describen la intención editorial humana: el sitio es
@@ -254,9 +271,16 @@ BlogFilosofico/
 ├── CNAME                   # Dominio público (blog-filosofico.surge.sh)
 ├── envios/                 # Aportaciones recibidas (NO se despliegan)
 │   └── README.md           # Instrucciones de entrada y flujo
+├── preguntas/              # Pregunta semanal y respuestas (NO se despliegan)
+│   ├── README.md           # Guía del administrador (lunes → domingo)
+│   ├── abiertas/           # Pregunta abierta de la semana
+│   ├── cerradas/           # Semanas cerradas (con o sin unidad)
+│   └── respuestas/         # Respuestas por correo, agrupadas por week-slug
 ├── scripts/
-│   ├── import-submissions.mjs  # Importador local sin dependencias
-│   ├── .importados.json    # Manifiesto de huellas SHA-256 importadas
+│   ├── import-submissions.mjs  # Importador local de aportaciones
+│   ├── import-questions.mjs# Importador local de preguntas y respuestas
+│   ├── .importados.json    # Manifiesto de aportaciones ya importadas
+│   ├── .preguntas-importadas.json # Manifiesto de preguntas y unidades
 │   ├── generate-feeds.mjs  # RSS y sitemap deterministas
 │   └── check-feeds.mjs     # Comprueba que los feeds siguen a ARTICLES
 ├── assets/
@@ -287,9 +311,10 @@ BlogFilosofico/
 │   ├── main.js             # Punto de entrada: monta y conecta todo
 │   ├── data/
 │   │   ├── articles.js     # ← PUBLICACIONES del sitio (concatena CONTRIBUTIONS)
-│   │   ├── contributions.js# ← GENERADO por el importador (aportaciones revisadas)
+│   │   ├── contributions.js# ← GENERADO (aportaciones + unidades de preguntas)
+│   │   ├── questions.js    # ← GENERADO por import-questions.mjs (abierta + archivo)
 │   │   ├── sections.js     # ← CATÁLOGO de secciones (deriva de articles.js)
-│   │   ├── editorial.js    # ← carta, política, ritmos y pregunta semanal
+│   │   ├── editorial.js    # ← carta, política y ritmos del sitio
 │   │   └── config.js       # ← dominio, correo del administrador y ajustes
 │   ├── lib/
 │   │   ├── cover.js        # Portadas SVG de respaldo
@@ -423,6 +448,9 @@ las que crea el editor— usan los mismos campos:
 | `readingTime` | Minutos de lectura estimados. |
 | `tags` | Etiquetas (reservadas para búsqueda/filtros). |
 | `cover` | Metadatos de la portada de respaldo: `alt`, `credit`, `numeral`, `palette`. |
+| `kind` | `oficial` para el formato académico; vacío en el resto. |
+| `documentUrl` | URL HTTPS del visor externo del documento (solo en `kind: oficial`). |
+| `documentoPendiente` | `si` cuando el documento está pendiente; excluye `documentUrl`. |
 
 La **descripción breve** (`description`) es la tarjeta; el **cuerpo completo**
 (`content`) es la página individual. Son campos distintos y se editan por
@@ -729,7 +757,53 @@ respuesta automática: publicar es una decisión editorial posterior.
   y blobs de portada. `connect-src 'self' https:` se amplía a HTTPS porque el
   editor descarga portadas remotas con `fetch()` (`js/components/editor.js`);
   sin esa directiva esa descarga fallaría. `form-action 'none'` y
-  `frame-ancestors 'none'` cierran el envío de formularios y el embed.
+  `frame-ancestors 'none'` cierran el envío de formularios y que otros embeban
+   el sitio; `frame-src https://drive.google.com;` habilita solo el visor del
+   documento oficial, sin tocar el hash de `script-src`.
+
+### Texto oficial / formato académico
+
+La casilla «Texto oficial / formato académico» de la pestaña de escritura añade
+el tipo **Texto oficial** (sección `group: "tipo"` con SVG propio) sin borrar
+los otros tipos; al desmarcarla se quita solo ese tipo. Habilita tres campos:
+
+- **Cita bajo la portada:** se guarda como `cover.credit` (fuente única; no se
+  emite un `coverCredit` top-level) y la comparten el lector y la tarjeta.
+- **Documento · URL HTTPS del visor externo:** el `.docx` **no se aloja aquí**.
+  `parseDocumentUrl` solo acepta HTTPS (≤2000 caracteres, sin credenciales ni
+  caracteres de control).
+- **Subir documento a Google Drive:** botón del editor que abre
+  `https://drive.google.com/` en otra pestaña. Subí el archivo, compartilo como
+  **«Cualquiera con el enlace»** y pegá el enlace al volver en «Enlace de Google
+  Drive». El enlace debe ser **público**: uno privado no se ve en el blog. El
+  helper `documentUrlFromDriveLink` acepta
+  `https://drive.google.com/file/d/<ID>/view[?…]`, `/preview[?…]` y
+  `https://drive.google.com/open?id=<ID>`, y lo convierte a
+  `https://drive.google.com/file/d/<ID>/preview`. Rechaza otros hosts (por
+  ejemplo `docs.google.com`), esquemas distintos de HTTPS y los enlaces de
+  descarga directa `uc?export=download`, con mensajes en español. Pegar un
+  enlace desmarca «Documento pendiente»; marcarlo limpia la URL (`XOR`).
+- **Documento pendiente de elegir servicio:** alternativa excluyente a la URL.
+  El importador exige exactamente una de las dos (`XOR`) y rechaza ambas o
+  ninguna; el administrador confirma o retira `documentoPendiente: si` durante
+  la revisión editorial.
+
+Google Drive admite hasta **5 TB por archivo** y **15 GB de almacenamiento
+gratuito** compartido con otros servicios de la cuenta; el visor puede mostrar
+documentos grandes sin alojarlos en este sitio. Aviso honesto: el issue
+**427614561** (2025) sobre el visor embebido **no está marcado `fixed`**; si el
+iframe falla, la lectura ofrece siempre el **enlace directo** al documento como
+respaldo. No se promete que el frame funcione en todos los navegadores.
+
+`SITE.documentEmbedHosts` es ahora `["drive.google.com"]`. `canEmbed(host,
+hosts)` sigue siendo el único gate para crear el iframe; con otro host se
+muestra «Documento pendiente de elegir servicio» y el enlace directo, nunca un
+iframe fingido. La lista y `frame-src https://drive.google.com;` en `_headers`
+cambian **juntos**, conservando el hash del `<script>` inline del CSP. El
+enlace pegado (`driveLink`) es estado local del editor: se guarda en el
+borrador del navegador para repoblar el campo, pero **nunca se emite en el
+`.md`**. El `.md` exportado incluye `kind: oficial`, `documentUrl` y/o
+`documentoPendiente`, `cover.credit` y el cuerpo Markdown.
 
 ### Markdown
 
@@ -854,7 +928,7 @@ node --check js/data/contributions.js
 node scripts/check-feeds.mjs
 
 # Despliegue manual de artefactos: ni envios/, ni tests/, ni scripts/:
-npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'
+surge publish
 ```
 
 `--input <dir>` permite apuntar el importador a otra carpeta (por ejemplo, las
@@ -872,12 +946,71 @@ con otro contenido es un error. Si algo falla, el detalle se escribe en
 `envios/ERRORES.txt` (archivo y motivo, en español) y la aplicación se revierte
 desde `scripts/.staging-<pid>/`.
 
+### Incorporar una pregunta y sus respuestas
+
+El domingo, con la pregunta en `cerradas/` y las respuestas en `respuestas/`:
+
+```bash
+node scripts/import-questions.mjs            # simulación: no escribe nada
+node scripts/import-questions.mjs --apply    # transaccional
+node --check js/data/questions.js
+node --check js/data/contributions.js
+node scripts/check-feeds.mjs
+surge publish
+```
+
+`--input <dir>` apunta a otro lote (por ejemplo,
+`tests/fixtures/questions`). El importador valida el lunes ISO estricto, los
+slugs, el estado y los campos de autorización; aplica el mismo patrón
+transaccional que el importador de aportaciones (`scripts/.staging-preguntas-<pid>/`,
+copias de seguridad y reversión), escribe `preguntas/ERRORES.txt` solo con
+`--apply` y registra las huellas en `scripts/.preguntas-importadas.json`.
+Cada semana cerrada con respuestas autorizadas genera **una** unidad en
+`js/data/contributions.js`; las semanas con `unidad: no` solo alimentan el
+archivo. Los feeds se regeneran desde `[...ARTICLES, ...unidadesNuevas]`.
+El correo se publica solo con `authorization: si`, `publicarEmail: si` y un
+`email` válido: en cualquier otro caso se omite. Nada se publica sin
+desplegar.
+
+### Importadores en serie (obligatorio)
+
+`import-submissions.mjs` e `import-questions.mjs` se ejecutan **en serie, como
+procesos separados**: nunca en paralelo ni encadenados con `&&` o `;` en un
+mismo comando. Cada uno es transaccional y reescribe `js/data/contributions.js`
+desde su propio punto de partida, así que lanzarlos a la vez puede perder
+entradas. Tras **cada** `--apply`, y antes de pasar al siguiente importador:
+
+```bash
+node scripts/check-feeds.mjs
+git diff -- js/data/contributions.js
+```
+
+`check-feeds.mjs` debe decir «Feeds al día.»; el `git diff` permite comprobar
+que solo aparecieron las entradas nuevas y que se conservan las ya importadas
+(incluidas las unidades de preguntas). Las cabeceras generadas de
+`contributions.js` **difieren** entre ambos importadores (el bloque de
+comentarios de cada uno describe su propio flujo): es solo el comentario, no
+indica pérdida de entradas. No lo «corrijas» editando el módulo generado a mano.
+
+El proyecto guarda su dominio en `CNAME`, así que `surge publish` ya sabe dónde
+publicar: no hace falta pasar el dominio ni repetir exclusidades en cada bloque.
+`.surgeignore` excluye `envios/`, `preguntas/`, `tests/` y `scripts/` antes de
+empaquetar (misma sintaxis que `.gitignore`):
+
+```bash
+surge publish
+```
+
+`envios/` y `preguntas/` son de entrada; `tests/` y `scripts/` (importadores y
+manifiestos) no deben subir. Verificá siempre en staging/despliegue real qué se
+sube realmente. Si no tenés `surge` instalado, `npx surge publish` hace lo mismo.
+
 ### Después de incorporar
 
 1. Recargá el sitio y comprobá que el artículo aparece en la lectura y el
    índice, en su sección de época o problema **y** en la de su tipo de texto,
    con su portada.
-2. Volvé a desplegar los artefactos con `npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'`. El feed RSS
+2. Volvé a desplegar los artefactos con `surge publish`. El feed RSS
    (`feed.xml`), el `sitemap.xml` y `robots.txt` se suben con el resto: el
    navegador no genera el feed. Las URLs canónicas usan `#/articulos/<slug>`.
 
@@ -953,13 +1086,15 @@ entorno ni proceso de build.
 ### Opción rápida (surge.sh)
 
 ```bash
-npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'
+surge publish
 ```
 
-Los tres `--exclude` evitan publicar aportaciones, pruebas y el importador con
-su manifiesto. **Verificá en staging o en el despliegue real qué archivos se
-suben**: el comportamiento de `--exclude` depende de la versión de Surge y de la
-configuración del hosting; no lo des por sentado sin comprobarlo.
+`.surgeignore` evita publicar aportaciones, preguntas y respuestas, pruebas y
+los importadores con sus manifiestos. El dominio sale del archivo **`CNAME`**,
+así que no hay que escribirlo en el comando. **Verificá en staging o en el
+despliegue real qué archivos se suben**: el comportamiento de la exclusión
+depende de la versión de Surge y de la configuración del hosting; no lo des por
+sentado sin comprobarlo.
 
 El archivo **`CNAME`** (`blog-filosofico.surge.sh`) fija el dominio. También
 sirve cualquier hosting estático (GitHub Pages, Netlify, Vercel, un bucket S3,
@@ -981,8 +1116,13 @@ Si cambiás de dominio, actualizá ambos (y el `CNAME`).
 Como no hay backend, publicar es **importar y volver a subir**: guardá la
 aportación en `envios/`, ejecutá `node scripts/import-submissions.mjs --apply`
 (y verificá con `node scripts/check-feeds.mjs`) y desplegá los artefactos con
-`npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'`.
+`surge publish`.
 El feed, la cuadrícula y las secciones se actualizan solos desde `CONTRIBUTIONS`.
+
+Las respuestas a la pregunta siguen el mismo principio, con ritmo semanal: se
+guardan en `preguntas/`, se importan el domingo con
+`node scripts/import-questions.mjs --apply` y se despliegan a mano. No hay cron
+ni publicación automática; ver `preguntas/README.md`.
 
 ---
 

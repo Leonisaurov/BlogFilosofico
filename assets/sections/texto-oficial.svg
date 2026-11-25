@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" role="img" aria-label="Documento académico con sello oficial">
+  <rect width="240" height="160" fill="#f5e9d6"/>
+  <g fill="none" stroke="#956b46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M58 24h88l28 28v84H58z"/>
+    <path d="M146 24v28h28"/>
+    <path d="M76 70h66M76 86h66M76 102h44"/>
+    <circle cx="178" cy="112" r="24"/>
+    <path d="M168 112l7 7 14-16"/>
+  </g>
+</svg>

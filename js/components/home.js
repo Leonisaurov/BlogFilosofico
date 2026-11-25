@@ -8,12 +8,8 @@
  */
 
 import { ARTICLES, getArticle } from "../data/articles.js";
-import {
-  CURRENT_QUESTION,
-  FEATURED_SLUG,
-  RHYTHMS,
-  WELCOME_LETTER,
-} from "../data/editorial.js";
+import { FEATURED_SLUG, RHYTHMS, WELCOME_LETTER } from "../data/editorial.js";
+import { QUESTIONS } from "../data/questions.js";
 import { escapeHtml } from "../lib/dom.js";
 import { formatShortDate } from "../lib/format.js";
 import { createCard } from "./card.js";
@@ -69,6 +65,7 @@ function rhythmsHtml() {
 export function createHome(root) {
   const featured = featuredArticle();
   const recent = featured ? summaryRows(featured) : [];
+  const question = QUESTIONS.open;
 
   root.innerHTML = `
     <div class="home__inner">
@@ -113,11 +110,13 @@ export function createHome(root) {
             <span>semana</span>
           </div>
           <div class="question-card__body">
-            <p class="eyebrow">${escapeHtml(CURRENT_QUESTION.kicker)}</p>
+            <p class="eyebrow">Pregunta de la semana</p>
             <h2 class="question-card__question" id="home-question-title">${escapeHtml(
-              CURRENT_QUESTION.question
+              question?.question || "¿Qué vamos a pensar esta semana?"
             )}</h2>
-            <p class="question-card__text">${escapeHtml(CURRENT_QUESTION.context)}</p>
+            <p class="question-card__text">${escapeHtml(
+              question?.context || "La pregunta de esta semana se está preparando. Volé el lunes."
+            )}</p>
             <a class="question-card__link" href="#/pregunta">Responder o leer el archivo <span aria-hidden="true">→</span></a>
           </div>
         </div>

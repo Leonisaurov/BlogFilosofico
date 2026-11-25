@@ -1,0 +1,34 @@
+{
+  "pregunta:2026-11-23-que-sigue-siendo-tuyo": {
+    "sha256": "098aef2c5d21f76f223d8518d3322ee1d7eadb5e86ae65575d58e2be3691af90",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "pregunta:2026-10-26-preguntas-que-no-se-responden": {
+    "sha256": "0d5beda516b96cce89cfe331c2df3c406ccaf1d3f3a7a351bd97a08e5d488488",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "pregunta:2026-11-02-que-le-debe-la-filosofia-a-la-conversacion": {
+    "sha256": "3f387b7d2b0283507159db859aeab15ecc0861de0e88bd4e356caef5c0ee15d6",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "pregunta:2026-11-09-no-pensar-sin-imagenes": {
+    "sha256": "bcd17121e3b61acdce19df06a5755b964637a66b6aa24cf3d581ccbb536ddad7",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "pregunta:2026-11-16-para-que-sirve-una-objecion": {
+    "sha256": "4431f22bf86ad5c9c78ae9e7cf6300f97352551d71cee3717f6c93785a1962b2",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "respuesta:2026-11-16-para-que-sirve-una-objecion/ana-souza": {
+    "sha256": "6bed2c2762e5261a2134d1bc967b1b711138002d46a9d9cc84e51fd037486d9b",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "respuesta:2026-11-16-para-que-sirve-una-objecion/bruno-torres": {
+    "sha256": "3fc11f08502ce6c8b92dee284d3ce4792cf8725c3a2a8649b60e9f1330c0f932",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  },
+  "unidad:2026-11-16-para-que-sirve-una-objecion": {
+    "sha256": "b28c94b2195c8ed259f0b415aaee3f39b0b2920a4537611499fa044956917a21",
+    "importedAt": "2026-11-25T07:55:03.325Z"
+  }
+}

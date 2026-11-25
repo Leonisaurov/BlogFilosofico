@@ -11,7 +11,7 @@
  */
 
 import { articleHref } from "../data/articles.js";
-import { coverDataUri } from "../lib/cover.js";
+import { coverCreditHtml, coverDataUri } from "../lib/cover.js";
 import { escapeHtml } from "../lib/dom.js";
 
 const ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -19,6 +19,10 @@ const ARROW = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke
   <path d="M4 12h15M13 6l6 6-6 6"/></svg>`;
 
 const twoDigits = (n) => String(n).padStart(2, "0");
+
+/** Firma de portada: imagen + cita, para refrescar la preview al cambiar cualquiera. */
+const coverSignature = (article) =>
+  [article?.coverImage ?? "", article?.cover?.credit ?? ""].join("\u0000");
 
 function imageHtml(coverImage, eager) {
   if (!coverImage) return "";
@@ -68,7 +72,7 @@ export function createCard(
   if (variant === "feature") card.classList.add("post--feature");
   card.dataset.id = article.id ?? "";
   card.dataset.active = link ? "false" : "true";
-  card.dataset.coverImage = article.coverImage ?? "";
+  card.dataset.coverImage = coverSignature(article);
 
   if (link) {
     card.href = articleHref(article);
@@ -84,6 +88,7 @@ export function createCard(
     <div class="post__media" aria-hidden="true">
       <div class="post__cover"></div>
       ${imageHtml(article.coverImage, eager)}
+      ${coverCreditHtml(article, "post__credit")}
     </div>
     <div class="post__scrim" aria-hidden="true"></div>
     <div class="post__body">
@@ -125,12 +130,15 @@ export function updateCard(card, article) {
 
   setFallback(card, article);
 
-  const next = article.coverImage ?? "";
+  const next = coverSignature(article);
   if (card.dataset.coverImage !== next) {
     card.dataset.coverImage = next;
     const media = card.querySelector(".post__media");
     if (media) {
-      media.innerHTML = `<div class="post__cover"></div>${imageHtml(next, false)}`;
+      media.innerHTML = `<div class="post__cover"></div>${imageHtml(
+        article.coverImage ?? "",
+        false
+      )}${coverCreditHtml(article, "post__credit")}`;
       setFallback(card, article);
       attachCoverHandlers(card);
     }

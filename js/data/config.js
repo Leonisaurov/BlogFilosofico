@@ -40,6 +40,8 @@ export const SITE = {
     "Estética",
     "Filosofía política",
     "Lógica",
+    "Pregunta de la semana",
+    "Texto oficial",
   ],
 
   /**
@@ -48,4 +50,14 @@ export const SITE = {
    * hay que incorporar el archivo a `assets/` manualmente.
    */
   localImageMaxBytes: 700_000,
+
+  /**
+   * Hosts autorizados a mostrar el documento de un «Texto oficial» en iframe.
+   * Proveedor elegido: Google Drive. Si el host no coincide (o la lista está
+   * vacía) no se crea ningún iframe y la lectura muestra «Documento pendiente
+   * de elegir servicio» con el enlace directo como respaldo.
+   * Este host y `frame-src https://drive.google.com;` en `_headers` cambian
+   * JUNTOS, conservando el hash del script inline del CSP.
+   */
+  documentEmbedHosts: ["drive.google.com"],
 };

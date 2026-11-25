@@ -1,10 +1,10 @@
 /**
- * contributions.js — PUBLICACIONES INCORPORADAS POR EL IMPORTADOR LOCAL.
+ * contributions.js — PUBLICACIONES INCORPORADAS POR LOS IMPORTADORES LOCALES.
  *
- * Archivo GENERADO por `node scripts/import-submissions.mjs --apply`.
- * No editar a mano: las aportaciones llegan por correo, se guardan en `envios/`,
- * se validan con el importador y se revisan editorialmente antes de publicar.
- * `js/data/articles.js` concatena este arreglo al final de `ARTICLES`.
+ * Archivo GENERADO por `node scripts/import-submissions.mjs --apply` y
+ * `node scripts/import-questions.mjs --apply`. No editar a mano: las
+ * aportaciones y las unidades de «Pregunta de la semana» pasan por revisión
+ * editorial. `js/data/articles.js` concatena este arreglo a `ARTICLES`.
  */
 export const CONTRIBUTIONS = [
   {
@@ -271,5 +271,33 @@ Esa coherencia, y no la verdad absoluta, es lo que estaba dispuesto a morir sin 
     createdAt: "2026-01-28",
     readingTime: 6,
     tags: ["Sócrates","ética","examen","virtud"],
+  },
+  {
+    id: "unidad-2026-11-16-para-que-sirve-una-objecion",
+    slug: "unidad-2026-11-16-para-que-sirve-una-objecion",
+    title: "¿Para qué sirve una objeción?",
+    description: "Sobre el desacuerdo argumentativo y las formas de escuchar.",
+    category: "Pregunta de la semana",
+    types: ["Unidad"],
+    author: "Comunidad del Blog de Filosofía",
+    coverImage: "",
+    content: `## La pregunta
+
+¿Para qué sirve una objeción?
+
+Discutir suele parecer un duelo: gana quien sostiene la tesis hasta el final. Sin embargo, una objeción también puede ser una forma de cuidado: señala lo que todavía no puede sostenerse. ¿Cuándo una objeción ayuda a pensar y cuándo solo interrumpe?
+
+*Sobre el desacuerdo argumentativo y las formas de escuchar.*
+
+## Respuestas publicadas
+
+### Ana Souza
+
+Montevideo
+
+Una objeción que no puedo responder me obliga a revisar el argumento: no es una derrota, es una ocasión para encontrar el eslabón débil. A veces el problema no está en la tesis sino en la prisa con que la sostuve.`,
+    createdAt: "2026-11-22",
+    readingTime: 1,
+    tags: [],
   },
 ];

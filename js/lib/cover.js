@@ -88,3 +88,15 @@ export function coverSvg(article, { width = 1200, height = 1600 } = {}) {
 export function coverDataUri(article, options) {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(coverSvg(article, options))}`;
 }
+
+/**
+ * Cita bajo la portada (`cover.credit`), compartida por el lector y la tarjeta.
+ * `className` permite el estilo de cada vista sin duplicar el marcado ni la
+ * lógica de escapado. Fuente única: no existe un `coverCredit` top-level.
+ */
+export function coverCreditHtml(article, className = "reader__credit") {
+  const credit = String(article?.cover?.credit ?? "").trim();
+  if (!credit) return "";
+  const cls = /^[A-Za-z][\w-]*$/.test(className) ? className : "reader__credit";
+  return `<figcaption class="${cls}">${esc(credit)}</figcaption>`;
+}

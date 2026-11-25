@@ -19,3 +19,6 @@ envios/*
 
 # Zona transaccional del importador local.
 scripts/.staging-*
+
+# Estado local del panel de desarrollo (nunca se despliega ni se publica).
+tools/borradores/

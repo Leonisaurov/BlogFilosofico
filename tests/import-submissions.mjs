@@ -18,9 +18,19 @@ import {
   generateModule,
   importSubmissions,
 } from "../scripts/import-submissions.mjs";
+import { SITE } from "../js/data/config.js";
+import { SECTIONS } from "../js/data/sections.js";
+import {
+  canEmbed,
+  parseDocumentUrl,
+  documentUrlFromDriveLink,
+} from "../js/lib/document-embed.js";
+import { createPublication, toFrontMatter } from "../js/lib/publication.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURES = path.join(ROOT, "tests", "fixtures", "submissions");
+const OFICIAL = path.join(FIXTURES, "oficial");
+const OFICIAL_INVALIDO = path.join(FIXTURES, "oficial-invalido");
 const ARTIFACTS = [
   "js/data/contributions.js",
   "scripts/.importados.json",
@@ -165,4 +175,132 @@ test("lote inválido aislado: falla con mensajes en español y sin cambios", asy
   assert.ok(result.errors.every((error) => /aporte-invalido\.md:/.test(error)));
   assert.match(result.errors.join("\n"), /clave de front matter no permitida/);
   assertUntouched(before);
+});
+
+// --- «Texto oficial / formato académico» ----------------------------------
+
+test("parseSubmission acepta documentoPendiente para revisión editorial", () => {
+  const md = [
+    "---",
+    'title: "Prueba"',
+    "slug: prueba-oficial",
+    'description: "x"',
+    'category: "Texto oficial"',
+    'types: ["Texto oficial"]',
+    'author: "Prueba"',
+    'coverImage: ""',
+    "createdAt: 2026-11-25",
+    "kind: oficial",
+    "documentoPendiente: si",
+    "---",
+    "",
+    "Cuerpo.",
+  ].join("\n");
+  const parsed = parseSubmission(md, "pendiente.md");
+  assert.equal(parsed.kind, "oficial");
+  assert.equal(parsed.documentoPendiente, "si");
+  assert.equal(parsed.documentUrl, "");
+});
+
+test("fixtures oficiales: válido con URL y pendiente sin URL se aceptan en simulación", async () => {
+  const before = snapshot();
+  const result = await importSubmissions({ root: ROOT, inputDir: OFICIAL, apply: false });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.equal(result.imported.length, 2);
+  assert.deepEqual(result.errors, []);
+  const withUrl = result.imported.find((article) => article.slug === "informe-anual-del-seminario");
+  const pending = result.imported.find((article) => article.slug === "acta-pendiente-de-visor");
+  assert.equal(withUrl.kind, "oficial");
+  assert.equal(withUrl.documentUrl, "https://visor.ejemplo.com/documentos/informe-anual");
+  assert.equal(withUrl.documentoPendiente, undefined);
+  assert.equal(withUrl.cover.credit, "Archivo del seminario · dominio público");
+  assert.equal(withUrl.types.includes("Texto oficial"), true);
+  assert.equal("coverCredit" in withUrl, false, "no se emite coverCredit top-level");
+  assert.equal(pending.documentoPendiente, "si");
+  assert.equal(pending.documentUrl, undefined);
+  assertUntouched(before);
+});
+
+test("fixtures oficiales inválidos: XOR, HTTPS, crédito y tipo sin kind", async () => {
+  const before = snapshot();
+  const result = await importSubmissions({ root: ROOT, inputDir: OFICIAL_INVALIDO, apply: false });
+  assert.equal(result.ok, false);
+  const all = result.errors.join("\n");
+  assert.ok(result.errors.length >= 7, all);
+  assert.match(all, /documentUrl: la URL del documento debe usar HTTPS/);
+  assert.match(all, /javascript:/);
+  assert.match(all, /cover\.credit/);
+  assert.match(all, /exactamente una de "documentUrl" o "documentoPendiente"/);
+  assert.match(all, /tipo "Texto oficial" exige kind: oficial/);
+  assert.match(all, /documentoPendiente solo se admite en un Texto oficial/);
+  assertUntouched(before);
+});
+
+test("toFrontMatter: cover.credit es fuente única y documentoPendiente se emite", () => {
+  const publication = createPublication({
+    title: "Acta",
+    category: "Texto oficial",
+    types: ["Texto oficial"],
+    kind: "oficial",
+    documentUrl: "",
+    documentoPendiente: true,
+    cover: { credit: "Archivo · dominio público" },
+    content: "Cuerpo.",
+  });
+  const md = toFrontMatter(publication);
+  assert.match(md, /^kind: oficial$/m);
+  assert.match(md, /^documentoPendiente: si$/m);
+  assert.match(md, /^cover: \{"credit":"Archivo · dominio público"\}$/m);
+  assert.doesNotMatch(md, /^coverCredit:/m);
+  assert.doesNotMatch(md, /^documentUrl:/m);
+});
+
+test("parseDocumentUrl: solo HTTPS, sin credenciales ni caracteres de control", () => {
+  assert.equal(
+    parseDocumentUrl("https://visor.ejemplo.com/doc").href,
+    "https://visor.ejemplo.com/doc"
+  );
+  for (const bad of [
+    "http://visor.ejemplo.com/doc",
+    "javascript:alert(1)",
+    "https://user:pass@visor.ejemplo.com/doc",
+    "https://visor.ejemplo.com/doc\nX",
+    `https://visor.ejemplo.com/${"a".repeat(2001)}`,
+  ]) {
+    assert.throws(() => parseDocumentUrl(bad), /URL del documento/, bad);
+  }
+});
+
+test("canEmbed exige lista de hosts: solo Drive está permitido", () => {
+  assert.deepEqual(SITE.documentEmbedHosts, ["drive.google.com"]);
+  assert.equal(canEmbed("drive.google.com", SITE.documentEmbedHosts), true);
+  assert.equal(canEmbed("visor.ejemplo.com", SITE.documentEmbedHosts), false);
+  assert.equal(canEmbed("visor.ejemplo.com", []), false);
+  assert.equal(canEmbed("", ["drive.google.com"]), false);
+  assert.equal(canEmbed("drive.google.com", ["DRIVE.GOOGLE.COM"]), true);
+});
+
+test("documentUrlFromDriveLink: solo Drive HTTPS se convierte al visor", () => {
+  const esperado = "https://drive.google.com/file/d/ABC123xyz-_/preview";
+  for (const enlace of [
+    "https://drive.google.com/file/d/ABC123xyz-_/view?usp=sharing",
+    "https://drive.google.com/file/d/ABC123xyz-_/preview",
+    "https://drive.google.com/open?id=ABC123xyz-_",
+    "  https://drive.google.com/file/d/ABC123xyz-_/view  ",
+  ]) {
+    assert.equal(documentUrlFromDriveLink(enlace), esperado, enlace);
+    assert.equal(parseDocumentUrl(documentUrlFromDriveLink(enlace)).hostname, "drive.google.com");
+  }
+  for (const [enlace, motivo] of [
+    ["https://docs.google.com/document/d/ABC123xyz-_/edit", /drive\.google\.com/],
+    ["https://evil.example/file/d/ABC123xyz-_/view", /drive\.google\.com/],
+    ["http://drive.google.com/file/d/ABC123xyz-_/view", /HTTPS/],
+    ["https://drive.google.com/file/d/id%20invalido/view", /identificador/],
+    ["https://drive.google.com/file/d/ABC123xyz-_/edit", /identificador/],
+    ["https://drive.google.com/uc?id=ABC123xyz-_&export=download", /descarga el archivo/],
+    ["https://drive.google.com/uc?export=download&id=ABC123xyz-_", /descarga el archivo/],
+    ["", /pegá el enlace/],
+  ]) {
+    assert.throws(() => documentUrlFromDriveLink(enlace), motivo, enlace);
+  }
 });

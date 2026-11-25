@@ -249,6 +249,24 @@ export const SECTIONS = [
     image: "./assets/sections/poesia.svg",
     aliases: ["Poema", "Poemas"],
   },
+  {
+    slug: "unidad",
+    name: "Unidad",
+    group: "tipo",
+    description:
+      "Una semana de preguntas: la pregunta abierta y las respuestas que la comunidad decidió publicar.",
+    image: "./assets/sections/unidad.svg",
+    aliases: ["Unidades"],
+  },
+  {
+    slug: "texto-oficial",
+    name: "Texto oficial",
+    group: "tipo",
+    description:
+      "Formato académico: un documento institucional con portada, cita y texto externo, revisado editorialmente.",
+    image: "./assets/sections/texto-oficial.svg",
+    aliases: ["Texto oficial académico", "Oficial"],
+  },
 ];
 
 /**

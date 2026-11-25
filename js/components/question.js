@@ -1,17 +1,31 @@
 /**
  * question.js — Pregunta de la semana.
  *
- * Una sola pregunta, un mecanismo honesto para responder (correo, porque el
- * sitio es estático) y el archivo de preguntas anteriores. No simula un foro
- * ni un formulario que no existe.
+ * Una pregunta abierta, un mecanismo honesto para responder (correo, porque el
+ * sitio es estático) y el archivo de semanas cerradas, con enlace a la unidad
+ * publicada cuando la hubo. No simula un foro ni un formulario que no existe.
  */
 
 import { SITE } from "../data/config.js";
-import { CURRENT_QUESTION } from "../data/editorial.js";
+import { QUESTIONS } from "../data/questions.js";
 import { escapeHtml } from "../lib/dom.js";
 
+const KICKER = "Pregunta de la semana";
+
+function editionLabel(week) {
+  const date = new Date(`${week}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return `Semana del ${week}`;
+  const formatted = new Intl.DateTimeFormat("es-AR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(date);
+  return `Semana del ${formatted}`;
+}
+
 function responseMailto() {
-  const subject = `Respuesta a la pregunta: ${CURRENT_QUESTION.question}`;
+  const question = QUESTIONS.open?.question || "la pregunta de la semana";
+  const subject = `Respuesta a la pregunta: ${question}`;
   const body = [
     "Hola:",
     "",
@@ -20,29 +34,37 @@ function responseMailto() {
     "",
     "—",
     "Nombre:",
-    "Ciudad:",
+    "Ciudad (opcional):",
+    "Correo (opcional):",
+    "¿Publicar mi correo? (no / sí):",
     "¿Autorizo la publicación de mi respuesta? (sí / no):",
   ].join("\n");
   return `mailto:${SITE.adminEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export function createQuestion(root) {
+  const open = QUESTIONS.open;
   const mailto = responseMailto();
-  const archive = CURRENT_QUESTION.archive
-    .map(
-      (item) => `
+  const archive = QUESTIONS.weeks
+    .map((item) => {
+      const question = item.href
+        ? `<a class="text-link question__archive-link" href="${escapeHtml(item.href)}">${escapeHtml(
+            item.question
+          )}</a>`
+        : escapeHtml(item.question);
+      return `
       <li class="question__archive-item">
-        <p class="question__archive-edition">${escapeHtml(item.edition)}</p>
-        <p class="question__archive-question">${escapeHtml(item.question)}</p>
-        <p class="question__archive-note">${escapeHtml(item.note)}</p>
-      </li>`
-    )
+        <p class="question__archive-edition">${escapeHtml(editionLabel(item.week))}</p>
+        <p class="question__archive-question">${question}</p>
+        <p class="question__archive-note">${escapeHtml(item.note || "")}</p>
+      </li>`;
+    })
     .join("");
 
   root.innerHTML = `
     <div class="question__inner">
       <header class="question__header">
-        <p class="eyebrow">${escapeHtml(CURRENT_QUESTION.kicker)}</p>
+        <p class="eyebrow">${KICKER}</p>
         <h1 class="question__title">Una pregunta,<br /><em>una semana</em>.</h1>
         <p class="question__lede">
           Cada lunes abrimos una pregunta. No hay respuesta correcta ni
@@ -60,10 +82,12 @@ export function createQuestion(root) {
         <div class="question__postcard-body">
           <p class="question__postcard-label">Esta semana</p>
           <h2 class="question__postcard-question" id="current-question">${escapeHtml(
-            CURRENT_QUESTION.question
+            open?.question || "La pregunta de esta semana se está preparando"
           )}</h2>
-          <p class="question__postcard-text">${escapeHtml(CURRENT_QUESTION.context)}</p>
-          <p class="question__postcard-text">${escapeHtml(CURRENT_QUESTION.closing)}</p>
+          <p class="question__postcard-text">${escapeHtml(
+            open?.context || "Volé el lunes para leer la nueva pregunta."
+          )}</p>
+          ${open?.closing ? `<p class="question__postcard-text">${escapeHtml(open.closing)}</p>` : ""}
           <div class="question__actions">
             <a class="button button--primary" href="${escapeHtml(mailto)}">Responder por correo</a>
             <a class="button button--ghost" href="#/informacion">Cómo se edita una respuesta</a>
@@ -76,18 +100,23 @@ export function createQuestion(root) {
         <ol class="question__steps">
           <li>
             <span class="question__step-num" aria-hidden="true">01</span>
-            <h3>Leé la pregunta</h3>
-            <p>No hace falta investigar: alcanza con pensar desde lo que ya sabés.</p>
+            <h3>Lunes: leé la pregunta</h3>
+            <p>Cada lunes abrimos una pregunta nueva. Alcanza con pensar desde lo que ya sabés.</p>
           </li>
           <li>
             <span class="question__step-num" aria-hidden="true">02</span>
-            <h3>Escribí una respuesta breve</h3>
-            <p>Una idea, un ejemplo o una objeción. Entre 150 y 600 palabras es un buen lugar.</p>
+            <h3>Hasta el domingo: respondé</h3>
+            <p>Una idea, un ejemplo o una objeción. El botón abre tu cliente de correo; no hay formulario ni backend.</p>
           </li>
           <li>
             <span class="question__step-num" aria-hidden="true">03</span>
-            <h3>Mandala por correo</h3>
-            <p>El botón abre tu cliente de correo. Si tu respuesta se publica, te pedimos permiso antes.</p>
+            <h3>Domingo: publicamos las respuestas</h3>
+            <p>El blog se actualiza con las respuestas el domingo, siempre con tu permiso. Publicamos las respuestas tal cual, sin editar el estilo; solo excluimos lo dañino y lo no autorizado.</p>
+          </li>
+          <li>
+            <span class="question__step-num" aria-hidden="true">04</span>
+            <h3>Después: queda en el archivo</h3>
+            <p>La semana cerrada se guarda como una unidad en el índice. Si no hubo respuestas autorizadas, solo queda la pregunta en el archivo.</p>
           </li>
         </ol>
       </section>
@@ -103,9 +132,16 @@ export function createQuestion(root) {
       <section class="question__note">
         <p class="eyebrow">Una aclaración</p>
         <p>
-          La pregunta de la semana no es una encuesta ni un concurso. Es una
-          excusa para pensar en compañía. Las respuestas se leen con la misma
-          política editorial que las aportaciones.
+          Tu correo no se publica salvo que lo autorices expresamente: hace falta
+          la autorización de publicación y, además, tu permiso específico para
+          mostrar el correo. El blog es estático: el administrador importa las
+          respuestas y despliega a mano; no hay cron ni publicación automática.
+        </p>
+        <p>
+          El acuse en 72 horas, la decisión en 15 días hábiles y las dos rondas
+          de edición son compromisos de las <strong>aportaciones</strong>, no de
+          las respuestas. Estas últimas no se editan: se publican tal cual o se
+          excluyen.
         </p>
         <a class="text-link" href="#/informacion">Leer la política editorial <span aria-hidden="true">→</span></a>
       </section>

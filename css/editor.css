@@ -380,6 +380,45 @@
   outline-offset: 2px;
 }
 
+/* --- Texto oficial / formato académico ---------------------------------- */
+.editor__checkline {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.editor__checkline input {
+  width: auto;
+  margin-top: 2px;
+  accent-color: var(--accent-deep);
+}
+
+.editor__drive {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.editor__drive p { margin: 0; }
+
+.editor__official {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-sunken);
+}
+
+.editor__official[hidden] {
+  display: none;
+}
+
 .editor__cover-row {
   display: grid;
   grid-template-columns: auto 1fr;

@@ -780,7 +780,7 @@
 
 .question__steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: clamp(18px, 3vw, 32px);
   margin: 22px 0 0;
   padding: 0;
@@ -848,6 +848,10 @@
 .question__archive-note {
   font-size: 0.8rem;
   color: var(--text-dim);
+}
+
+.question__archive-link {
+  color: inherit;
 }
 
 .question__note {

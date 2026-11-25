@@ -13,6 +13,23 @@ nada todavía**:
   `cover: {…}` (JSON de una línea, con `alt`, `credit`, `numeral` y `palette`),
   `id: …`, `tags: […]` (JSON) y `readingTime: <entero>`. El importador valida sus
   tipos; si faltan, deriva los valores por defecto.
+- Para un **Texto oficial / formato académico** el editor sí emite además
+  `kind: oficial`, la cita dentro de `cover.credit` (nunca un `coverCredit`
+  top-level) y **exactamente una** de `documentUrl` (URL HTTPS del visor
+  externo; el `.docx` no se aloja aquí) o `documentoPendiente: si`. El importador
+  aplica XOR: ambas o ninguna son error, y el estado pendiente se deja para que
+  el admin lo confirme o lo retire en revisión. El tipo «Texto oficial» es
+  obligatorio cuando `kind: oficial`.
+- En el editor, «Subir documento a Google Drive» abre Drive para subir el
+  archivo. El enlace debe compartirse como **«Cualquiera con el enlace»** (un
+  enlace privado no se ve en el blog) y se pega al volver en «Enlace de Google
+  Drive». `documentUrlFromDriveLink` convierte `/view?usp=sharing`, `/preview` y
+  `/open?id=<ID>` a `https://drive.google.com/file/d/<ID>/preview`, y rechaza
+  otros hosts y los enlaces `uc?export=download`. Solo `documentUrl` llega al
+  `.md`: `driveLink` queda en el borrador local del navegador. Google Drive
+  admite hasta 5 TB por archivo y 15 GB de almacenamiento gratuito; el issue
+  427614561 (2025) del visor no está marcado `fixed`, por eso la lectura ofrece
+  el enlace directo como respaldo si el iframe falla.
 
 Las siete publicaciones originales del sitio se migraron a este formato: sus
 `.md` y sus portadas JPG se archivaron en `envios/importadas/<slug>/` al aplicar
@@ -36,10 +53,21 @@ node scripts/import-submissions.mjs
 node scripts/import-submissions.mjs --apply
 node --check js/data/contributions.js
 node scripts/check-feeds.mjs
+git diff -- js/data/contributions.js
 
-# 4) Despliegue manual de artefactos (nunca de envios/):
-npx surge . blog-filosofico.surge.sh --exclude 'envios/*' --exclude 'tests/*' --exclude 'scripts/*'
+# 4) Despliegue manual de artefactos (nunca de envios/ ni de preguntas/):
+surge publish
 ```
+
+Este importador y `import-questions.mjs` se ejecutan **en serie, como procesos
+separados** (nunca en paralelo ni con `&&`/`;`): ambos reescriben
+`js/data/contributions.js` desde su propio punto de partida. Tras cada
+`--apply` de cualquiera de los dos, corré `node scripts/check-feeds.mjs` (debe
+decir «Feeds al día.») y `git diff -- js/data/contributions.js` para confirmar
+que solo aparecieron las entradas nuevas y se conservaron las anteriores. Las
+cabeceras generadas difieren entre importadores: es **solo el comentario**, no
+pérdida de entradas. Las exclusiones viven en `.surgeignore` (una sola fuente);
+`surge publish` toma el dominio de `CNAME`.
 
 El `--apply` es transaccional: valida el lote completo antes de tocar nada,
 escribe primero en `scripts/.staging-<pid>/` y solo al final renombra los

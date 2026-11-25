@@ -2,9 +2,9 @@
  * editorial.js — Voz y contrato editorial del blog.
  *
  * Reúne los textos que no son publicaciones pero sostienen el proyecto:
- * la carta de bienvenida, la política editorial, los dos ritmos del sitio
- * (cosas y preguntas) y la pregunta de la semana. Igual que `articles.js`,
- * es una única fuente de datos: las vistas no escriben estos textos a mano.
+ * la carta de bienvenida, la política editorial y los dos ritmos del sitio
+ * (cosas y preguntas). La pregunta concreta y su archivo viven en el módulo
+ * generado `js/data/questions.js`: las vistas no escriben estos textos a mano.
  */
 
 import { SITE } from "./config.js";
@@ -33,7 +33,7 @@ export const RHYTHMS = [
     cadence: "Cada lunes",
     title: "Una pregunta para pensar en voz alta",
     description:
-      "Cada lunes abrimos una pregunta. Se responde por correo, con calma y sin extensión obligatoria. El último lunes del mes publicamos una selección de respuestas, siempre con permiso.",
+      "Cada lunes abrimos una pregunta. Se responde por correo, con calma y sin extensión obligatoria. El domingo publicamos las respuestas autorizadas, tal cual llegaron. El cierre y el despliegue los hace el administrador a mano: no hay cron ni publicación automática.",
     action: { label: "Ver la pregunta de esta semana", href: "#/pregunta" },
   },
   {
@@ -46,32 +46,6 @@ export const RHYTHMS = [
     action: { label: "Leer lo publicado", href: "#/indice" },
   },
 ];
-
-export const CURRENT_QUESTION = {
-  kicker: "Pregunta de la semana",
-  question: "¿Qué sigue siendo tuyo cuando cambiás de opinión?",
-  context:
-    "Cambiar de idea suele vivirse como una derrota. Pero si el «yo» es también lo que sostiene una conversación, quizá cambiar de opinión no sea perder una identidad sino ejercerla. ¿Qué queda de vos cuando una certeza se cae?",
-  closing:
-    "Respondé antes del domingo. No hace falta un ensayo: alcanza con una idea, un ejemplo o una objeción bien formulada.",
-  archive: [
-    {
-      edition: "Semana del 9 de noviembre",
-      question: "¿Se puede pensar sin imágenes?",
-      note: "Sobre metáforas, conceptos y los límites del lenguaje.",
-    },
-    {
-      edition: "Semana del 2 de noviembre",
-      question: "¿Qué le debe la filosofía a la conversación?",
-      note: "Sobre el diálogo como forma de verdad.",
-    },
-    {
-      edition: "Semana del 26 de octubre",
-      question: "¿Qué hacemos con las preguntas que no se responden?",
-      note: "Sobre la paciencia, la duda y el derecho a no concluir.",
-    },
-  ],
-};
 
 export const EDITORIAL_POLICY = {
   eyebrow: "Política editorial",

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Panel local de desarrollo · Blog de Filosofía</title>
+  <link rel="stylesheet" href="/site/css/tokens.css" />
+  <link rel="stylesheet" href="/panel/panel.css" />
+  <script type="module" src="/panel/app.js"></script>
+</head>
+<body>
+  <header class="cabecera">
+    <div>
+      <p class="etiqueta">Herramienta local · no se despliega</p>
+      <h1>Panel de desarrollo</h1>
+      <p class="bajada">Preparar borradores en las carpetas canónicas, simular la importación y revisar el resultado antes de aplicar. Guardar no publica; aplicar no despliega.</p>
+    </div>
+    <div class="salud" id="salud">Comprobando…</div>
+  </header>
+
+  <main>
+    <nav class="pestañas" aria-label="Tipo de borrador">
+      <button type="button" class="pestaña activa" data-tab="publicacion">Publicación</button>
+      <button type="button" class="pestaña" data-tab="pregunta">Pregunta de la semana</button>
+      <button type="button" class="pestaña" data-tab="respuesta">Respuesta</button>
+    </nav>
+
+    <section class="panel" id="tab-publicacion">
+      <h2>Publicación</h2>
+      <p class="nota">Usa <strong>Texto oficial</strong> solo con <code>kind: oficial</code>, el tipo «Texto oficial» y la cita de portada. Documento y «pendiente» se excluyen.</p>
+      <form id="form-publicacion" class="formulario">
+        <label>Título <input name="title" required /></label>
+        <label>Slug <input name="slug" placeholder="se genera desde el título" /></label>
+        <label>Descripción <textarea name="description" rows="2"></textarea></label>
+        <label>Categoría <input name="category" value="Ensayo" list="categorias" /></label>
+        <datalist id="categorias"></datalist>
+        <fieldset>
+          <legend>Tipos de texto</legend>
+          <div class="casillas" id="tipos-publicacion"></div>
+        </fieldset>
+        <label>Autor <input name="author" /></label>
+        <label>Fecha de creación <input name="createdAt" type="date" /></label>
+        <label>Contenido (Markdown) <textarea name="content" rows="9"></textarea></label>
+        <label>Portada local (JPG/PNG/WebP) <input name="portada" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+        <label>Cita bajo la portada (<code>cover.credit</code>) <input name="credit" /></label>
+        <label class="casilla"><input name="oficial" type="checkbox" /> Texto oficial (<code>kind: oficial</code>)</label>
+        <label>URL del documento (solo HTTPS) <input name="documentUrl" type="url" placeholder="https://…" /></label>
+        <div class="drive">
+          <button type="button" id="boton-drive">Subir documento a Google Drive</button>
+          <label>Enlace de Google Drive
+            <input name="driveLink" id="drive-link" type="url"
+                   placeholder="https://drive.google.com/file/d/…/view?usp=sharing" />
+          </label>
+          <p class="nota">Subí el archivo, compartilo como <em>Cualquiera con el enlace</em> y pegá acá el enlace al volver. El blog guarda solo el visor: <code>https://drive.google.com/file/d/&lt;ID&gt;/preview</code>.</p>
+        </div>
+        <label>Documento pendiente <select name="documentoPendiente"><option value="no">no</option><option value="si">sí</option></select></label>
+        <div class="acciones"><button type="submit" class="primario">Guardar borrador</button></div>
+      </form>
+    </section>
+
+    <section class="panel oculto" id="tab-pregunta">
+      <h2>Pregunta de la semana</h2>
+      <p class="nota">La <code>week</code> debe ser un lunes ISO. El <code>estado</code> decide si se guarda en <code>abiertas/</code> o <code>cerradas/</code>.</p>
+      <form id="form-pregunta" class="formulario">
+        <label>Semana (lunes) <input name="week" type="date" required /></label>
+        <label>Slug <input name="slug" required /></label>
+        <label>Estado <select name="estado"><option value="abierta">abierta</option><option value="cerrada">cerrada</option></select></label>
+        <label>Pregunta <input name="question" required /></label>
+        <label>Contexto <textarea name="context" rows="3" required></textarea></label>
+        <label>Nota <input name="note" /></label>
+        <label>Cierre <input name="closing" /></label>
+        <label>Portada / referencia <input name="cover" /></label>
+        <label class="casilla"><input name="unidad" type="checkbox" /> Archivar sin generar unidad (<code>unidad: no</code>)</label>
+        <label>Contenido (Markdown) <textarea name="content" rows="7"></textarea></label>
+        <div class="acciones"><button type="submit" class="primario">Guardar borrador</button></div>
+      </form>
+    </section>
+
+    <section class="panel oculto" id="tab-respuesta">
+      <h2>Respuesta recibida</h2>
+      <p class="nota">La respuesta entra en la unidad solo con <code>authorization: si</code>. El correo se publica únicamente con <code>publicarEmail: si</code> y un email válido.</p>
+      <form id="form-respuesta" class="formulario">
+        <label>Semana de la pregunta (lunes) <input name="week" type="date" required /></label>
+        <label>Slug de la pregunta <input name="slug" required /></label>
+        <label>Autor <input name="author" required /></label>
+        <label>Autor-slug <input name="autorSlug" placeholder="se deriva del autor" /></label>
+        <label>Autorización <select name="authorization"><option value="no">no</option><option value="si">sí</option></select></label>
+        <label>Ciudad <input name="city" /></label>
+        <label>Correo <input name="email" type="email" /></label>
+        <label>Publicar correo <select name="publicarEmail"><option value="no">no</option><option value="si">sí</option></select></label>
+        <label class="casilla"><input name="publicar" type="checkbox" /> Incluir en la unidad (exige autorización)</label>
+        <label>Contenido (Markdown) <textarea name="content" rows="8" required></textarea></label>
+        <div class="acciones"><button type="submit" class="primario">Guardar borrador</button></div>
+      </form>
+    </section>
+
+    <section class="panel" id="flujo">
+      <h2>Flujo: simular → confirmar → aplicar</h2>
+      <div class="acciones">
+        <button type="button" id="boton-simular">1. Simular</button>
+        <button type="button" id="boton-preview">2. Previsualizar</button>
+        <button type="button" id="boton-aplicar" class="primario" disabled>3. Aplicar</button>
+      </div>
+      <label class="confirmar">Escribí <code>APLICAR</code> para confirmar <input id="confirmacion" autocomplete="off" /></label>
+      <p class="nota" id="estado-token">Sin simulación válida.</p>
+      <div id="registro" class="registro" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" id="borradores-seccion">
+      <h2>Borradores en las carpetas canónicas</h2>
+      <div class="acciones"><button type="button" id="boton-actualizar">Actualizar lista</button></div>
+      <ul id="lista-borradores" class="lista"></ul>
+    </section>
+
+    <section class="panel oculto" id="previews-seccion">
+      <h2>Vista previa</h2>
+      <p class="nota">Copia temporal: la semana se cierra solo en la copia para mostrar respuestas parciales. Ningún borrador real se mueve ni se archiva.</p>
+      <div id="enlaces-preview" class="enlaces"></div>
+      <div id="iframes-preview" class="iframes"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Servicio sin autenticación, solo <code>127.0.0.1</code>. Nunca lo expongas a una red. Consultá <code>tools/README.md</code>.</p>
+  </footer>
+</body>
+</html>

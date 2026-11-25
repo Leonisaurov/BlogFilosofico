@@ -1,8 +1,9 @@
 // tipos.spec.mjs — Verifica la nueva clasificación por tipo de texto.
 //
 // Deriva de la especificación de la tarea: existe una tercera agrupación en
-// «Secciones», con cinco tipos de texto, cada tarjeta con su imagen, y los
-// artículos se agrupan por tipo (incluido uno que tiene dos tipos a la vez).
+// «Secciones», con los tipos de texto (incluida la Unidad de la pregunta
+// semanal), cada tarjeta con su imagen, y los artículos se agrupan por tipo
+// (incluido uno que tiene dos tipos a la vez).
 export default {
   name: "tipos",
   path: "/",
@@ -17,6 +18,7 @@ export default {
       ["resena", "Reseña"],
       ["cuento", "Cuento"],
       ["poesia", "Poesía"],
+      ["unidad", "Unidad"],
     ];
 
     // 1) La cuadrícula de secciones incluye el grupo «Por tipo de texto».

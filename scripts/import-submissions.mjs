@@ -27,6 +27,7 @@ import { ARTICLES } from "../js/data/articles.js";
 import { CONTRIBUTIONS } from "../js/data/contributions.js";
 import { SITE } from "../js/data/config.js";
 import { SECTIONS } from "../js/data/sections.js";
+import { parseDocumentUrl } from "../js/lib/document-embed.js";
 import { estimateReadingTime } from "../js/lib/publication.js";
 import { buildFeedXml, buildSitemapXml } from "./generate-feeds.mjs";
 
@@ -40,10 +41,16 @@ const REQUIRED_KEYS = new Set([
 // Extensiones OPCIONALES para migraciones/importaciones avanzadas: el editor no
 // las emite. `cover` conserva alt/crédito/numeral/paleta; `id`, `tags` y
 // `readingTime` permiten migrar publicaciones existentes sin perder metadatos.
-const OPTIONAL_KEYS = new Set(["cover", "id", "tags", "readingTime"]);
+const OPTIONAL_KEYS = new Set([
+  "cover", "id", "tags", "readingTime",
+  // «Texto oficial»: `kind` activa el formato académico; exactamente una de
+  // `documentUrl` / `documentoPendiente` debe estar presente (XOR).
+  "kind", "documentUrl", "documentoPendiente",
+]);
 const ALLOWED_KEYS = new Set([...REQUIRED_KEYS, ...OPTIONAL_KEYS]);
 const IMAGE_EXTS = new Set(["jpg", "jpeg", "png", "webp"]);
 const REMOTE_COVER_RE = /^https?:\/\//i;
+const OFFICIAL_TYPE = "Texto oficial";
 const LOCAL_COMMENT_RE = /^#\s*Imagen local pendiente:\s*copiar\s+"([^"]+)"\s+a la carpeta assets\//;
 
 /** Huella de un archivo: identifica una aportación ya importada. */
@@ -148,6 +155,14 @@ export function parseSubmission(md, file = "aportacion.md") {
     readingTime = value;
   }
 
+  // Claves aditivas del «Texto oficial». Se aceptan en revisión: el admin
+  // confirma o retira `documentoPendiente` antes de publicar.
+  const kind = Object.hasOwn(data, "kind") ? scalar("kind") : "";
+  const documentUrl = Object.hasOwn(data, "documentUrl") ? scalar("documentUrl") : "";
+  const documentoPendiente = Object.hasOwn(data, "documentoPendiente")
+    ? scalar("documentoPendiente")
+    : "";
+
   return {
     file,
     title: scalar("title"),
@@ -163,6 +178,9 @@ export function parseSubmission(md, file = "aportacion.md") {
     id,
     tags,
     readingTime,
+    kind,
+    documentUrl,
+    documentoPendiente,
     content: lines.slice(end + 1).join("\n"),
     meta: null,
   };
@@ -266,6 +284,41 @@ export function validateSubmission(parsed, ctx) {
     else if (!types.includes(canonical)) types.push(canonical);
   }
 
+  // «Texto oficial / formato académico». `documentUrl` y `documentoPendiente`
+  // se excluyen: una de las dos, nunca ambas ni ninguna. Fuera de oficial,
+  // ninguna de las dos tiene sentido.
+  const isOfficial = parsed.kind === "oficial";
+  const hasUrl = Boolean(parsed.documentUrl);
+  const hasPending = Boolean(parsed.documentoPendiente);
+  if (parsed.kind && !isOfficial) push(`kind "${parsed.kind}" no reconocido (usa "oficial" o omítelo)`);
+  if (hasPending && !/^(si|sí)$/i.test(parsed.documentoPendiente)) {
+    push('documentoPendiente solo admite el valor "si"');
+  }
+  if (isOfficial) {
+    if (hasUrl === hasPending) {
+      push('un Texto oficial exige exactamente una de "documentUrl" o "documentoPendiente"');
+    }
+    if (hasUrl) {
+      try {
+        parseDocumentUrl(parsed.documentUrl);
+      } catch (error) {
+        push(`documentUrl: ${error.message}`);
+      }
+    }
+    if (!String(parsed.cover?.credit ?? "").trim()) {
+      push('la cita bajo la portada (cover.credit) es obligatoria en un Texto oficial');
+    }
+    if (!types.includes(OFFICIAL_TYPE)) {
+      push(`el tipo "${OFFICIAL_TYPE}" es obligatorio en un Texto oficial`);
+    }
+  } else {
+    if (hasUrl) push('documentUrl solo se admite en un Texto oficial (kind: oficial)');
+    if (hasPending) push('documentoPendiente solo se admite en un Texto oficial (kind: oficial)');
+    if (types.includes(OFFICIAL_TYPE)) {
+      push('el tipo "Texto oficial" exige kind: oficial');
+    }
+  }
+
   // Duplicados: huella conocida → se omite; slug conocido con otra huella → error.
   const hashOwner = new Map(Object.entries(manifest).map(([slug, entry]) => [entry?.sha256, slug]));
   const known = hashOwner.get(hash);
@@ -343,6 +396,9 @@ export function buildContribution(parsed, meta) {
     author: parsed.author.trim(),
     coverImage: meta.coverImage,
     ...(parsed.cover ? { cover: parsed.cover } : {}),
+    ...(parsed.kind ? { kind: parsed.kind } : {}),
+    ...(parsed.documentUrl ? { documentUrl: parsed.documentUrl } : {}),
+    ...(parsed.documentoPendiente ? { documentoPendiente: "si" } : {}),
     content: parsed.content,
     createdAt: parsed.createdAt,
     readingTime: parsed.readingTime ?? estimateReadingTime(parsed.content),
