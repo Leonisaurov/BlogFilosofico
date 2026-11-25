@@ -28,7 +28,7 @@
 
     <section class="panel" id="tab-publicacion">
       <h2>Publicación</h2>
-      <p class="nota">Usa <strong>Texto oficial</strong> solo con <code>kind: oficial</code>, el tipo «Texto oficial» y la cita de portada. Documento y «pendiente» se excluyen.</p>
+      <p class="nota">Elegí <strong>Documento oficial</strong> solo con <code>kind: oficial</code>, el tipo «Texto oficial» y la cita de portada. Documento y «pendiente» se excluyen.</p>
       <div class="archivos-participante" id="archivos-publicacion">
         <h3>Archivos del participante (.md y portada)</h3>
         <input type="file" multiple id="selector-publicacion"
@@ -53,7 +53,14 @@
         <label>Contenido (Markdown) <textarea name="content" rows="9"></textarea></label>
         <label>Portada local (JPG/PNG/WebP) <input name="portada" type="file" accept="image/jpeg,image/png,image/webp" /></label>
         <label>Cita bajo la portada (<code>cover.credit</code>) <input name="credit" /></label>
-        <label class="casilla"><input name="oficial" type="checkbox" /> Texto oficial (<code>kind: oficial</code>)</label>
+        <div class="campo-kind" role="group" aria-label="Tipo de texto">
+          <span>Tipo de texto</span>
+          <div class="segmentado">
+            <button type="button" data-kind="normal" aria-pressed="true">Redacción</button>
+            <button type="button" data-kind="oficial" aria-pressed="false">Documento oficial</button>
+          </div>
+          <p class="nota">«Documento oficial» adopta formato académico: el texto se acompaña de un documento externo. Subilo a Google Drive y pegá el enlace del visor.</p>
+        </div>
         <label>URL del documento (solo HTTPS) <input name="documentUrl" type="url" placeholder="https://…" /></label>
         <div class="drive">
           <button type="button" id="boton-drive">Subir documento a Google Drive</button>

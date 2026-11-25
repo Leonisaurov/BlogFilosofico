@@ -229,6 +229,21 @@ function activarPestaña(tipo) {
   });
 }
 
+/** Pinta el switch segmentado del formulario desde el modelo (`kind`). */
+function marcarKind(formulario, valor) {
+  const oficial = valor === "oficial";
+  formulario.querySelectorAll("[data-kind]").forEach((boton) => {
+    boton.setAttribute("aria-pressed", String((boton.dataset.kind === "oficial") === oficial));
+  });
+}
+
+/** El modelo sigue siendo `""`/`"oficial"`: "normal" no se envía al servidor. */
+function kindSeleccionado(formulario) {
+  return formulario.querySelector('[data-kind="oficial"]')?.getAttribute("aria-pressed") === "true"
+    ? "oficial"
+    : "";
+}
+
 function llenarFormulario(formulario, datos) {
   for (const [clave, valor] of Object.entries(datos ?? {})) {
     if (clave === "types" && Array.isArray(valor)) {
@@ -242,7 +257,7 @@ function llenarFormulario(formulario, datos) {
       continue;
     }
     if (clave === "kind") {
-      if (formulario.elements.oficial) formulario.elements.oficial.checked = valor === "oficial";
+      marcarKind(formulario, valor);
       continue;
     }
     if (clave === "documentoPendiente") {
@@ -268,6 +283,7 @@ function abrirBorrador(item) {
   activarPestaña(item.tipo);
   const formulario = $(`#form-${item.tipo}`);
   formulario.reset();
+  marcarKind(formulario, "");
   llenarFormulario(formulario, item.datos);
   if (item.tipo === "respuesta" && item.autorSlug && formulario.elements.autorSlug) {
     formulario.elements.autorSlug.value = item.autorSlug;
@@ -299,7 +315,7 @@ function datosPublicacion(formulario) {
     createdAt: v.createdAt ?? "",
     content: v.content ?? "",
     cover: v.credit ? { credit: v.credit } : {},
-    kind: v.oficial ? "oficial" : "",
+    kind: kindSeleccionado(formulario),
     documentUrl: v.documentUrl ?? "",
     driveLink: v.driveLink ?? "",
     documentoPendiente: v.documentoPendiente ?? "no",
@@ -337,6 +353,10 @@ function inicializar() {
 
   const enlaceDrive = $("#drive-link");
   const formPublicacion = $("#form-publicacion");
+
+  formPublicacion.querySelectorAll("[data-kind]").forEach((boton) => {
+    boton.addEventListener("click", () => marcarKind(formPublicacion, boton.dataset.kind));
+  });
 
   /** Convierte el enlace compartido en la URL del visor y limpia «pendiente». */
   function convertirEnlaceDrive(valor) {

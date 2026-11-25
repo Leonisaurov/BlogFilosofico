@@ -377,6 +377,62 @@ test("HTTP: subir publicación y portada con el nombre del front matter", async 
   assert.match(importador.stdout, /aporte-del-participante\.md: válida/);
 });
 
+test("HTTP: ida y vuelta del switch del panel — kind: oficial sobrevive al .md", async (t) => {
+  const dir = rootTemporal("kind-oficial");
+  const panel = crearPanel({ root: dir, puerto: 0 });
+  const direccion = await panel.iniciar();
+  t.after(async () => {
+    await panel.cerrar();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+  const base = `http://127.0.0.1:${direccion.port}`;
+  const enviar = (datos) => fetch(`${base}/api/borradores`, {
+    method: "POST", headers: JSON_HEADER, body: JSON.stringify(datos),
+  });
+  const datos = {
+    tipo: "publicacion",
+    title: "Informe del panel",
+    slug: "informe-del-panel",
+    description: "Informe preparado con el switch.",
+    category: "Texto oficial",
+    types: ["Texto oficial"],
+    author: "Prueba",
+    createdAt: "2026-11-25",
+    kind: "oficial",
+    documentUrl: "https://drive.google.com/file/d/ABC123/preview",
+    documentoPendiente: "no",
+    cover: { credit: "Archivo" },
+    content: "Cuerpo del informe.",
+  };
+  const primera = await enviar(datos);
+  if (primera.status !== 200) assert.fail(`guardar: ${await primera.text()}`);
+  const archivo = path.join(dir, "envios", "informe-del-panel.md");
+  const md = fs.readFileSync(archivo, "utf8");
+  assert.match(md, /^kind: oficial$/m, "el .md guardado declara kind: oficial");
+  assert.doesNotMatch(md, /^kind: normal$/m, "«normal» nunca se emite al .md");
+
+  // El panel repuebla el switch leyendo el .md desde /api/estado.
+  const estado = await (await fetch(`${base}/api/estado`)).json();
+  const borrador = estado.borradores.find((b) => b.archivo === "envios/informe-del-panel.md");
+  assert.ok(borrador, "el borrador reaparece en el panel");
+  assert.equal(borrador.datos.kind, "oficial", "el switch se repuebla desde el .md");
+  assert.equal(borrador.datos.cover.credit, "Archivo");
+
+  // Reenviar tal como lo haría el panel tras repoblar conserva el modelo.
+  const segunda = await enviar({
+    ...datos,
+    kind: borrador.datos.kind,
+    cover: borrador.datos.cover,
+    documentUrl: borrador.datos.documentUrl,
+    content: borrador.datos.content,
+  });
+  if (segunda.status !== 200) assert.fail(`re guardar: ${await segunda.text()}`);
+  const mdReenviado = fs.readFileSync(archivo, "utf8");
+  assert.match(mdReenviado, /^kind: oficial$/m, "kind: oficial sobrevive borrador → panel → .md");
+  assert.match(mdReenviado, /^documentUrl: .*drive\.google\.com/m, "se conserva el visor");
+  assert.match(mdReenviado, /Cuerpo del informe\./, "se conserva el cuerpo");
+});
+
 test("HTTP: subir pregunta y respuesta con autor-slug del nombre de archivo", async (t) => {
   const dir = rootTemporal("pregunta-respuesta");
   const panel = crearPanel({ root: dir, puerto: 0 });

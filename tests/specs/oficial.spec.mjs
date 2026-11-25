@@ -20,14 +20,10 @@ export default {
       page.waitForSelector(selector, { timeout: 8000, ...options }).catch((error) => {
         throw new Error(`waitForSelector "${label}": ${error.message}`);
       });
-    // El clic táctil emulado de Firefox no entrega el `change` de forma
-    // determinista; se dispara la misma señal que escucha el editor.
-    const setOfficial = (checked) =>
-      page.evaluate((value) => {
-        const toggle = document.querySelector("[data-official-toggle]");
-        toggle.checked = value;
-        toggle.dispatchEvent(new Event("change", { bubbles: true }));
-      }, checked);
+    // Clics reales en el switch segmentado: el editor deriva `state.kind` del
+    // botón con aria-pressed="true" (ya no hay checkbox que dispare `change`).
+    const setOfficial = (activo) =>
+      page.click(`[data-kind-btn="${activo ? "oficial" : "normal"}"]`);
 
     // 1) El tipo «Texto oficial» está en el catálogo (grupo «Por tipo de texto»).
     await page.evaluate(() => {
@@ -51,7 +47,9 @@ export default {
       "el contenido se conserva al escribir"
     );
     await setOfficial(true);
-    await wait("casilla marcada", () => document.querySelector("[data-official-toggle]").checked);
+    await wait("«Documento oficial» presionado", () =>
+      document.querySelector('[data-kind-btn="oficial"]').getAttribute("aria-pressed") === "true"
+    );
     const contentAfterToggle = await page.evaluate(
       () => document.querySelector('[data-field="content"]').value
     );
@@ -127,9 +125,9 @@ export default {
       types: document.querySelector('[data-field="types"]').value,
       credit: document.querySelector('[data-field="coverCredit"]').value,
       documentUrl: document.querySelector('[data-field="documentUrl"]').value,
-      checked: document.querySelector("[data-official-toggle]").checked,
+      pressed: document.querySelector('[data-kind-btn="oficial"]').getAttribute("aria-pressed"),
     }));
-    t.assert(restored.checked, "tras recargar sigue marcado como texto oficial");
+    t.assert(restored.pressed === "true", "tras recargar sigue elegido «Documento oficial»");
     t.assert(restored.title === "Informe oficial de prueba", "se restaura el título");
     const storedContent = await page.evaluate(() => {
       const value = localStorage.getItem("blogfilosofia.borrador.v2");
@@ -302,7 +300,7 @@ export default {
     const beforeDialog = await page.evaluate(() => ({
       title: document.querySelector('[data-field="title"]').value,
       content: document.querySelector('[data-field="content"]').value.length,
-      official: document.querySelector("[data-official-toggle]").checked,
+      official: document.querySelector('[data-kind-btn="oficial"]').getAttribute("aria-pressed") === "true",
       notice: document.querySelector("[data-editor-notice]")?.textContent || "",
     }));
     t.assert(

@@ -78,6 +78,13 @@ const MODES = [
   { mode: "preview", label: "Vista previa" },
 ];
 
+const KINDS = [
+  { kind: "normal", label: "Redacción" },
+  { kind: "oficial", label: "Documento oficial" },
+];
+
+const KIND_KEYS = new Set(KINDS.map((item) => item.kind));
+
 const PREVIEW_TABS = [
   { tab: "card", label: "Tarjeta del feed" },
   { tab: "article", label: "Aportación completa" },
@@ -250,12 +257,20 @@ export function createEditor(root, { onClose } = {}) {
               <input data-field="author" placeholder="Nombre y apellido" />
             </label>
 
-            <div class="editor__field editor__field--wide editor__official-toggle">
-              <span>Formato académico</span>
-              <label class="editor__checkline">
-                <input type="checkbox" data-official-toggle />
-                <span>Texto oficial / formato académico (documento externo)</span>
-              </label>
+            <div class="editor__field editor__field--wide editor__kind">
+              <span>Tipo de texto</span>
+              <div class="editor__modes editor__modes--kind" role="group" aria-label="Tipo de texto">
+                ${KINDS.map(
+                  (item) => `
+                  <button type="button" class="editor__mode editor__mode--kind"
+                          data-kind-btn="${item.kind}"
+                          aria-pressed="${item.kind === "normal"}">${item.label}</button>`
+                ).join("")}
+              </div>
+              <p class="editor__kind-hint">
+                «Documento oficial» adopta formato académico: el texto se acompaña de un
+                documento externo. Subilo a Google Drive y pegá el enlace del visor.
+              </p>
             </div>
 
             <div class="editor__official" data-official-fields hidden>
@@ -524,7 +539,7 @@ export function createEditor(root, { onClose } = {}) {
   const proposalCheckCoverRow = root.querySelector("[data-proposal-check-cover-row]");
   const proposalConfirmHint = root.querySelector("[data-proposal-confirm-hint]");
   const proposalContinue = root.querySelector("[data-proposal-continue]");
-  const officialToggle = root.querySelector("[data-official-toggle]");
+  const kindButtons = [...root.querySelectorAll("[data-kind-btn]")];
   const officialFields = root.querySelector("[data-official-fields]");
   const officialPending = root.querySelector("[data-official-pending]");
   const driveUploadButton = root.querySelector("[data-drive-upload]");
@@ -662,9 +677,11 @@ export function createEditor(root, { onClose } = {}) {
   }
 
   /**
-   * El tipo «Texto oficial» va con la casilla: al marcar se añade (sin borrar
-   * los otros tipos) y al desmarcar se quita SOLO ese tipo. Se llama al leer el
-   * formulario, al cargar un borrador y al escribir el formulario.
+   * El tipo «Texto oficial» va con el switch: al elegir «Documento oficial» se
+   * añade (sin borrar los otros tipos) y al volver a «Redacción» se quita SOLO
+   * ese tipo. Se llama al leer el formulario, al cargar un borrador y al
+   * escribir el formulario. El modelo sigue siendo `""`/`"oficial"`: "normal"
+   * es solo la etiqueta del botón y nunca se emite al `.md`.
    */
   function syncOfficialType() {
     const checked = state.kind === "oficial";
@@ -674,7 +691,10 @@ export function createEditor(root, { onClose } = {}) {
     } else if (!checked) {
       state.types = others;
     }
-    officialToggle.checked = checked;
+    const selectedKind = checked ? "oficial" : "normal";
+    kindButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.kindBtn === selectedKind));
+    });
     officialFields.hidden = !checked;
     fieldEls.documentUrl.disabled = !checked;
     fieldEls.driveLink.disabled = !checked;
@@ -693,7 +713,10 @@ export function createEditor(root, { onClose } = {}) {
     state.category = fieldEls.category.value;
     state.types = normalizeTypes(fieldEls.types.value);
     state.author = fieldEls.author.value;
-    state.kind = officialToggle.checked ? "oficial" : "";
+    const pressedKind = kindButtons.find(
+      (button) => button.getAttribute("aria-pressed") === "true"
+    );
+    state.kind = pressedKind?.dataset.kindBtn === "oficial" ? "oficial" : "";
     state.documentUrl = fieldEls.documentUrl.value;
     state.driveLink = fieldEls.driveLink.value;
     state.coverCredit = fieldEls.coverCredit.value;
@@ -704,7 +727,7 @@ export function createEditor(root, { onClose } = {}) {
     // a escribir el valor anterior y el borrador perdería el cuerpo Markdown.
     state.content = contentEl.value;
     syncOfficialType();
-    // La casilla puede haber añadido o quitado el tipo: el input debe coincidir.
+    // La elección del tipo puede haber añadido o quitado el tipo: el input debe coincidir.
     writeForm();
   }
 
@@ -1049,6 +1072,20 @@ export function createEditor(root, { onClose } = {}) {
       button.setAttribute("aria-pressed", String(button.dataset.modeBtn === mode));
     });
     if (mode !== "edit") renderAllPreviews();
+  }
+
+  /**
+   * Conmuta «Redacción» / «Documento oficial». La whitelist evita que un valor
+   * inesperado del DOM (o de un script) se filtre al `.md` como `kind`.
+   * `onInput()` vuelve a derivar el estado leyendo los botones ya actualizados.
+   */
+  function setKind(kind) {
+    const selected = KIND_KEYS.has(kind) ? kind : "normal";
+    state.kind = selected === "oficial" ? "oficial" : "";
+    kindButtons.forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.kindBtn === selected));
+    });
+    onInput();
   }
 
   function setPreviewTab(tab) {
@@ -1506,7 +1543,6 @@ export function createEditor(root, { onClose } = {}) {
   ["coverCredit", "documentUrl"].forEach((name) => {
     fieldEls[name].addEventListener("input", onInput);
   });
-  officialToggle.addEventListener("change", onInput);
   officialPending.addEventListener("change", onInput);
 
   /**
@@ -1583,6 +1619,11 @@ export function createEditor(root, { onClose } = {}) {
     }
     if (event.target.closest("[data-mode-btn]")) {
       setMode(event.target.closest("[data-mode-btn]").dataset.modeBtn);
+      return;
+    }
+    const kindButton = event.target.closest("[data-kind-btn]");
+    if (kindButton) {
+      setKind(kindButton.dataset.kindBtn);
       return;
     }
     if (event.target.closest("[data-preview-tab]")) {

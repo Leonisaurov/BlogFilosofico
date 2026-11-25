@@ -154,6 +154,34 @@
   color: var(--surface);
 }
 
+/* Subclase del selector segmentado para «Redacción / Documento oficial».
+   Ocupa todo el campo ancho y reparte dos opciones sin desbordar en móvil. */
+.editor__modes--kind {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.editor__mode--kind {
+  flex: 1 1 8rem;
+  min-width: 0;
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 0.75rem;
+}
+
+.editor__mode--kind:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
+}
+
+.editor__kind-hint {
+  margin: 2px 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
 .editor__ghost {
   padding: 8px 13px;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);

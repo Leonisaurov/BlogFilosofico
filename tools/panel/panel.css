@@ -189,6 +189,48 @@ fieldset {
 
 legend { color: var(--accent-deep, #70513a); font-size: 0.9rem; }
 
+/* Switch segmentado «Redacción / Documento oficial» del formulario. */
+.campo-kind {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--text-2, #5d4c3d);
+}
+
+.segmentado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line-strong, #c2ab8f);
+  border-radius: 999px;
+}
+
+.segmentado button {
+  flex: 1 1 8rem;
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2, #5d4c3d);
+  font-size: 0.82rem;
+}
+
+.segmentado button[aria-pressed="true"] {
+  background: var(--accent-deep, #70513a);
+  color: var(--surface, #fffaf0);
+}
+
+.segmentado button:focus-visible {
+  outline: 2px solid var(--accent-deep, #70513a);
+  outline-offset: 2px;
+}
+
+.campo-kind .nota { margin: 0; }
+
 .casillas { display: flex; flex-wrap: wrap; gap: 0.5rem 1.2rem; }
 
 label.casilla,
